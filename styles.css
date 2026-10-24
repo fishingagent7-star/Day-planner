@@ -740,6 +740,24 @@
     align-self:flex-start;
   }
   .remove-btn:hover{color:var(--warn);}
+  /* Phones: the three small buttons (copy, move, delete) drop onto their own
+     line under the block, so the title, notes and categories get the full width. */
+  @media (max-width: 560px){
+    .block{
+      flex-wrap:wrap;
+      gap:0 8px;
+      padding-left:14px;
+    }
+    .block .content{
+      flex-basis:calc(100% - 70px); /* leaves room for the drag dots and checkbox */
+    }
+    .block .content + .remove-btn{
+      margin-left:auto;
+    }
+    .control-grid #addBtn{
+      white-space:nowrap;
+    }
+  }
   .copy-to-popover{
     position:absolute;
     right:0;
