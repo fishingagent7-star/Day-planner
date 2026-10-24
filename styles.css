@@ -169,16 +169,11 @@
   .control-grid #sortBtn{ grid-area:sort; justify-self:start; }
   @media (max-width: 560px){
     .control-grid{
-      /* the last column soaks up the spare space, so the four buttons sit together on the left */
-      grid-template-columns: repeat(4, auto) 1fr;
+      /* the middle column soaks up the spare space: Add and Sort on the left, the two circle buttons on the right */
+      grid-template-columns: auto auto 1fr auto auto;
       grid-template-areas:
-        "tabs  tabs tabs tabs tabs"
-        "today more add  sort .";
-    }
-    /* the ⋮ button is now near the left edge, so open its menu to the right */
-    .control-grid .more-menu{
-      right:auto;
-      left:0;
+        "tabs tabs tabs tabs  tabs"
+        "add  sort .    today more";
     }
     .daytabs-scroll{
       overflow-x:auto;
