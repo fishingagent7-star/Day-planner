@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day planner</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%86%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+  <div class="heading-row">
+    <h1 id="dateHeading">Today</h1>
+    <div class="mini-history">
+      <button id="undoBtn" class="mini-btn" title="Undo (Ctrl+Z)">&#8630;</button>
+      <button id="redoBtn" class="mini-btn" title="Redo (Ctrl+Shift+Z)">&#8631;</button>
+    </div>
+  </div>
+
+  <div class="day-progress">
+    <div class="day-progress-bar"><div class="day-progress-fill" id="dayProgressFill"></div></div>
+    <span class="day-progress-label" id="dayProgressLabel"></span>
+  </div>
+
+  <div class="mini-timeline" id="miniTimeline"></div>
+  <div class="mini-tooltip" id="miniTooltip"></div>
+
+  <div class="consistency" id="consistencyBlock" style="display:none;"></div>
+
+  <div class="control-grid">
+    <div class="daytabs-scroll" id="dayTabsScroll">
+      <div class="daytabs" id="dayTabs"></div>
+    </div>
+    <button id="todayBtn" class="mini-btn today-btn" title="Jump to today (T)">&#8226;</button>
+    <div class="more-menu-wrap">
+      <button id="moreBtn" class="mini-btn today-btn" title="More options">&#8942;</button>
+      <div class="more-menu" id="moreMenu" style="display:none;">
+        <button id="proportionalToggle">Timeline</button>
+        <button id="copyYesterdayBtn">Copy previous day</button>
+        <button id="templatesToggle">Templates</button>
+        <button id="categoriesToggle">Categories</button>
+        <button id="recurringToggle">Recurring</button>
+        <button id="settingsToggle" title="Shortcut: ,">Settings</button>
+        <button id="summaryToggle">Summary</button>
+        <button class="danger" id="clearBtn">Clear day</button>
+      </div>
+    </div>
+    <button class="primary" id="addBtn" title="Shortcut: N">+ Add block</button>
+    <button id="sortBtn" title="Shortcut: S">Sort</button>
+  </div>
+
+  <div class="toolbar" id="quickAddRow" style="display:none;">
+    <input type="text" id="quickAddInput" placeholder='e.g. "Training 4pm 90m"' style="flex:1; min-width:180px;">
+    <button class="primary" id="quickAddBtn">Add</button>
+  </div>
+
+  <div class="panel" id="summaryPanel" style="display:none;">
+    <div id="summaryContent" class="summary-content">Loading…</div>
+  </div>
+
+  <div class="panel" id="settingsPanel" style="display:none;">
+    <div class="toolbar">
+      <label class="setting-label">Background <input type="color" id="bgColorInput" class="cat-color-input"></label>
+      <label class="setting-label">Accent <input type="color" id="accentColorInput" class="cat-color-input"></label>
+    </div>
+    <div class="toolbar">
+      <label class="setting-label">Font
+        <select id="fontSelect">
+          <option value="serif">Serif (classic)</option>
+          <option value="sans">Sans-serif (clean)</option>
+        </select>
+      </label>
+      <button id="resetAppearanceBtn">Reset to default</button>
+      <button id="darkModeBtn">Dark mode</button>
+    </div>
+    <div class="toolbar">
+      <label class="setting-label"><input type="checkbox" id="showProgressToggle"> Progress bar</label>
+      <label class="setting-label"><input type="checkbox" id="showMiniTimelineToggle"> Day timeline strip</label>
+    </div>
+    <div class="toolbar">
+      <button id="exportBtn">Export backup</button>
+      <button id="importBtn">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;">
+      <span class="sub" id="importStatus" style="margin:0;"></span>
+    </div>
+    <p class="sub" id="compactStatus" style="margin:0 0 10px;"></p>
+    <div class="toolbar">
+      <label class="setting-label"><input type="checkbox" id="showConsistencyToggle"> Consistency grid</label>
+      <label class="setting-label"><input type="checkbox" id="quickAddToggle"> Quick add (type-to-add)</label>
+    </div>
+  </div>
+
+  <div class="panel" id="templatesPanel" style="display:none;">
+    <div class="toolbar">
+      <input id="templateNameInput" type="text" placeholder="Template name">
+      <button id="saveTemplateBtn">Save current day</button>
+    </div>
+    <div class="toolbar">
+      <select id="templateSelect"></select>
+      <button id="applyTemplateBtn">Apply</button>
+      <button class="danger" id="deleteTemplateBtn">Delete</button>
+    </div>
+    <p class="sub" id="templateStatus"></p>
+  </div>
+
+  <div class="panel" id="categoriesPanel" style="display:none;">
+    <div class="cat-manager" id="catManager"></div>
+  </div>
+
+  <div class="panel" id="recurringPanel" style="display:none;">
+    <div class="toolbar">
+      <select id="recurTemplateSelect"></select>
+      <div class="weekday-picker" id="recurWeekdayPicker"></div>
+      <button class="primary" id="addRecurBtn">+ Auto-apply</button>
+    </div>
+    <div id="recurList"></div>
+  </div>
+
+  <div class="track" id="track"></div>
+  <div class="add-row"><button id="addBtn2">+ Add block</button></div>
+  <div class="status" id="status"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="storage.js"></script>
+
+<script src="app.js"></script>
+</body>
+</html>
