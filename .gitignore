@@ -1,0 +1,10 @@
+# Files git should NOT save in checkpoints
+
+# Your exported planner data (personal - keep it out of the code history)
+backup/
+
+# Older versions of the app, kept just for reference
+archive/
+
+# Claude's own settings for testing
+.claude/
