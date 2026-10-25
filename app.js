@@ -2428,10 +2428,21 @@
       : '<b>' + con.name + ' complete!</b> It joins your sky tomorrow.';
     var names = collected.map(function(ci){ return CONSTELLATIONS[ci].name; });
     document.getElementById('nightSkyCaption').innerHTML = line +
-      (names.length ? ' · Collected: ' + names.join(', ') : '') +
+      '<span class="sky-hint"> · Tap to open</span>' +
+      '<span class="sky-more">' + (names.length ? ' · Collected: ' + names.join(', ') : '') +
       '<br>A star for every day you finish ' + goal + ' of your blocks.' +
-      (consLoading ? ' Counting your days…' : '');
+      (consLoading ? ' Counting your days…' : '') + '</span>';
   }
+
+  // Tap (or Enter / Space) opens the full sky; again closes it back to a strip.
+  var skyBlock = document.getElementById('nightSkyBlock');
+  function toggleSky(){
+    skyBlock.setAttribute('aria-expanded', skyBlock.classList.toggle('open'));
+  }
+  skyBlock.addEventListener('click', toggleSky);
+  skyBlock.addEventListener('keydown', function(e){
+    if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleSky(); }
+  });
 
   function renderConsistency(){
     renderNightSky(); // the sky is drawn from the same history, so it redraws whenever the grid would
