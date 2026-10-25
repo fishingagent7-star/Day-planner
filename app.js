@@ -1771,7 +1771,10 @@
 
   exportBtn.addEventListener('click', function(){
     importStatus.textContent = 'Gathering data…';
-    flushSaves().then(function(){ return window.storage.list('plan:'); }).then(function(res){
+    flushSaves().then(function(){
+      return Promise.all([window.storage.list('plan:'), window.storage.list('recurapplied:')]);
+    }).then(function(lists){
+      var res = lists[0];
       var keys = (res && res.keys) ? res.keys : [];
       // safety net: always include the currently visible week's keys too,
       // in case list() misses something or returns partial results
@@ -1789,24 +1792,31 @@
           return readSequentially(ks, idx + 1, acc);
         });
       }
-      return readSequentially(keys, 0, []);
+      // also which recurring rules each day already got, so a restore doesn't add them twice
+      var appliedKeys = (lists[1] && lists[1].keys) ? lists[1].keys : [];
+      return readSequentially(keys.concat(appliedKeys), 0, []);
     }).then(function(dayEntries){
       return Promise.all([
         window.storage.get('categories').catch(function(){ return null; }),
         window.storage.get('templates').catch(function(){ return null; }),
         window.storage.get('settings').catch(function(){ return null; }),
-        window.storage.get('consindex').catch(function(){ return null; })
+        window.storage.get('consindex').catch(function(){ return null; }),
+        window.storage.get('recurring').catch(function(){ return null; })
       ]).then(function(extras){
         var backup = {
           exportedAt: new Date().toISOString(),
           days: {},
+          recurapplied: {},
           categories: extras[0] ? extras[0].value : null,
           templates: extras[1] ? extras[1].value : null,
           settings: extras[2] ? extras[2].value : null,
-          consindex: extras[3] ? extras[3].value : null
+          consindex: extras[3] ? extras[3].value : null,
+          recurring: extras[4] ? extras[4].value : null
         };
         dayEntries.forEach(function(e){
-          if(e.value) backup.days[e.key] = e.value;
+          if(!e.value) return;
+          if(e.key.indexOf('recurapplied:') === 0) backup.recurapplied[e.key] = e.value;
+          else backup.days[e.key] = e.value;
         });
         var dayCount = Object.keys(backup.days).length;
         var blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
@@ -1863,8 +1873,21 @@
         });
       }
 
+      // which recurring rules each day already got (older backups don't have this)
+      var applied = data.recurapplied || {};
+      var appliedKeys = Object.keys(applied);
+      function writeApplied(idx){
+        if(idx >= appliedKeys.length) return Promise.resolve();
+        return window.storage.set(appliedKeys[idx], applied[appliedKeys[idx]]).catch(function(){}).then(function(){
+          return writeApplied(idx + 1);
+        });
+      }
+
       writeSequentially(dayKeys, 0).then(function(){
+        return writeApplied(0);
+      }).then(function(){
         var extraWrites = [];
+        if(data.recurring) extraWrites.push(window.storage.set('recurring', data.recurring).catch(function(){}));
         if(data.categories) extraWrites.push(window.storage.set('categories', data.categories).catch(function(){}));
         if(data.templates) extraWrites.push(window.storage.set('templates', data.templates).catch(function(){}));
         if(data.settings) extraWrites.push(window.storage.set('settings', data.settings).catch(function(){}));
@@ -1882,9 +1905,8 @@
         importStatus.textContent = 'Restored ' + succeeded + '/' + dayKeys.length + ' days — reloading…';
         Promise.all([
           loadCategories(),
-          loadTemplates(),
           loadSettings(),
-          loadDay()
+          Promise.all([loadRecurringRules(), loadTemplates()]).then(loadDay) // the day needs both, as at start-up
         ]).then(function(){
           refreshConsistency();
           importStatus.textContent = failed > 0
