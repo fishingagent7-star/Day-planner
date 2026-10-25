@@ -28,6 +28,25 @@
 
   <div class="consistency" id="consistencyBlock" style="display:none;"></div>
 
+  <div class="night-sky" id="nightSkyBlock" style="display:none;">
+    <svg id="nightSky" viewBox="0 0 1000 380" role="img" aria-label="Your night sky: one star for each good day">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0a1230"/>
+          <stop offset="1" stop-color="#23365f"/>
+        </linearGradient>
+        <filter id="skyGlow" x="-300%" y="-300%" width="700%" height="700%">
+          <feGaussianBlur stdDeviation="3" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect width="1000" height="380" fill="url(#skyGrad)"/>
+      <g id="skyBg"></g>
+      <g id="skyCons"></g>
+    </svg>
+    <p class="night-sky-caption" id="nightSkyCaption"></p>
+  </div>
+
   <div class="control-grid">
     <div class="daytabs-scroll" id="dayTabsScroll">
       <div class="daytabs" id="dayTabs"></div>
@@ -109,6 +128,14 @@
     <p class="sub" id="compactStatus" style="margin:0 0 10px;"></p>
     <div class="toolbar">
       <label class="setting-label"><input type="checkbox" id="showConsistencyToggle"> Consistency grid</label>
+      <label class="setting-label"><input type="checkbox" id="showNightSkyToggle"> Night sky</label>
+      <label class="setting-label">A good day is
+        <select id="goodDaySelect">
+          <option value="0.5">half my blocks done</option>
+          <option value="0.75">three quarters done</option>
+          <option value="1">all my blocks done</option>
+        </select>
+      </label>
       <label class="setting-label"><input type="checkbox" id="quickAddToggle"> Quick add (type-to-add)</label>
     </div>
   </div>

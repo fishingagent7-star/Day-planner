@@ -1534,7 +1534,7 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5 };
   // Ready-made looks. Picking one fills in the normal settings below; the rest
   // of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
@@ -1571,6 +1571,8 @@
   var showMiniTimelineToggle = document.getElementById('showMiniTimelineToggle');
   var quickAddToggle = document.getElementById('quickAddToggle');
   var showConsistencyToggle = document.getElementById('showConsistencyToggle');
+  var showNightSkyToggle = document.getElementById('showNightSkyToggle');
+  var goodDaySelect = document.getElementById('goodDaySelect');
 
   function applySettings(){
     if(settings.dark){
@@ -1607,7 +1609,10 @@
     quickAddToggle.checked = !!settings.quickAdd;
     showConsistencyToggle.checked = !!settings.showConsistency;
     document.getElementById('consistencyBlock').style.display = settings.showConsistency ? 'block' : 'none';
-    if(settings.showConsistency){
+    showNightSkyToggle.checked = !!settings.showNightSky;
+    goodDaySelect.value = String(settings.goodDay);
+    document.getElementById('nightSkyBlock').style.display = settings.showNightSky ? 'block' : 'none';
+    if(settings.showConsistency || settings.showNightSky){ // both are drawn from the same day-by-day history
       if(!consLoaded){ loadConsistencyCache(); } else { renderConsistency(); }
     }
     document.getElementById('quickAddRow').style.display = settings.quickAdd ? 'flex' : 'none';
@@ -1664,6 +1669,18 @@
       settings.bg = DEFAULT_SETTINGS.bg;
       settings.accent = DEFAULT_SETTINGS.accent;
     }
+    applySettings();
+    saveSettings();
+  });
+
+  showNightSkyToggle.addEventListener('change', function(e){
+    settings.showNightSky = e.target.checked;
+    applySettings();
+    saveSettings();
+  });
+
+  goodDaySelect.addEventListener('change', function(e){
+    settings.goodDay = parseFloat(e.target.value);
     applySettings();
     saveSettings();
   });
@@ -2255,7 +2272,7 @@
   function refreshConsistency(){
     consCache = {};
     consLoaded = false;
-    if(settings.showConsistency) loadConsistencyCache();
+    if(settings.showConsistency || settings.showNightSky) loadConsistencyCache();
   }
 
   // every day of the current calendar year, Jan 1 to Dec 31
@@ -2268,7 +2285,8 @@
     return cells;
   }
 
-  // A day counts toward the streak when at least half of what was planned got done.
+  // A day counts toward the streak when enough of what was planned got done
+  // (half by default; "A good day is" in Settings can raise it).
   // Today can't break a streak until it's over (it only adds to it once you're past half).
   function dayNum(ds){
     var p = ds.split('-');
@@ -2279,7 +2297,7 @@
     var ok = {};
     Object.keys(consCache).forEach(function(k){
       var v = consCache[k];
-      if(v && v.total > 0 && v.done / v.total >= 0.5) ok[dayNum(k.slice(5))] = true;
+      if(v && v.total > 0 && v.done / v.total >= settings.goodDay) ok[dayNum(k.slice(5))] = true;
     });
 
     var nums = Object.keys(ok).map(Number).sort(function(a, b){ return a - b; });
@@ -2297,7 +2315,126 @@
     return { current: current, best: best };
   }
 
+  // ---------- night sky ----------
+  // Every good day lights one star. Constellations fill in order, smallest
+  // first; a finished one moves to its own spot in the sky. Nothing is saved:
+  // the sky is worked out from the same history as the consistency grid, so it
+  // can't drift out of step between devices.
+  // shortcut: only counts this calendar year's days (all the grid loads); load older summaries too if people want a lifetime sky.
+
+  // Star positions are 0–100 inside each constellation's box, listed in the
+  // order they light up; the third number is brightness. Lines join two stars.
+  var CONSTELLATIONS = [
+    { name:'Southern Cross',
+      stars:[[55,92,1],[20,45,.9],[50,8,.85],[82,38,.7],[66,62,.5]],
+      lines:[[0,2],[1,3]] },
+    { name:'Orion',
+      stars:[[25,20,1],[75,85,1],[70,25,.8],[32,88,.7],[50,50,.8],[40,52,.75],[60,47,.7],[48,6,.5]],
+      lines:[[7,0],[7,2],[0,5],[2,6],[5,4],[4,6],[5,3],[6,1]] },
+    { name:'Canis Major',
+      stars:[[45,25,1],[25,15,.7],[50,45,.5],[55,62,.8],[45,85,.85],[75,75,.6],[30,72,.5]],
+      lines:[[1,0],[0,2],[2,3],[3,4],[3,5],[4,6]] },
+    { name:'Leo',
+      stars:[[70,75,1],[65,55,.6],[55,40,.8],[60,25,.5],[72,15,.5],[82,22,.6],[30,45,.6],[10,60,.8],[30,62,.5]],
+      lines:[[0,1],[1,2],[2,3],[3,4],[4,5],[2,6],[6,7],[7,8],[8,0]] },
+    { name:'Scorpius',
+      stars:[[15,10,.7],[12,22,.8],[14,35,.6],[30,30,.6],[38,38,1],[45,47,.6],[50,58,.7],[52,70,.6],[55,80,.6],[65,88,.6],[78,90,.7],[88,82,.6],[90,70,.6],[84,62,.9],[80,58,.6]],
+      lines:[[0,1],[1,2],[1,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,9],[9,10],[10,11],[11,12],[12,13],[13,14]] }
+  ];
+  // Where finished constellations sit, as [left, top] of a 110px box.
+  var SKY_SLOTS = [[70, 40], [70, 215], [820, 40], [820, 215]];
+  var skyTodayGood = null; // was today a good day at the last redraw? (null = not drawn yet)
+
+  // Count the good days up to today, and whether today is one of them.
+  function skyProgress(){
+    var today = localDateStr(new Date());
+    var good = Object.keys(consCache).filter(function(k){
+      var v = consCache[k];
+      return k.slice(5) <= today && v && v.total > 0 && v.done / v.total >= settings.goodDay;
+    });
+    return { stars: good.length, todayGood: good.indexOf('plan:' + today) !== -1 };
+  }
+
+  function svgEl(tag, attrs, parent){
+    var e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for(var k in attrs) e.setAttribute(k, attrs[k]);
+    parent.appendChild(e);
+    return e;
+  }
+
+  // Draw one constellation in a square box [left, top, size] with its first `lit` stars lit.
+  function drawConstellation(con, box, lit, small, freshIndex, parent){
+    var complete = lit >= con.stars.length;
+    function pt(st){ return [box[0] + st[0] / 100 * box[2], box[1] + st[1] / 100 * box[2]]; }
+    con.lines.forEach(function(ln){
+      if(ln[0] >= lit || ln[1] >= lit) return;
+      var a = pt(con.stars[ln[0]]), b = pt(con.stars[ln[1]]);
+      svgEl('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], 'class': 'sky-link' + (complete ? ' complete' : '') }, parent);
+    });
+    con.stars.forEach(function(st, i){
+      var p = pt(st);
+      if(i < lit){
+        svgEl('circle', { cx: p[0], cy: p[1], r: small ? 2 + st[2] * 2.5 : 4 + st[2] * 5, filter: 'url(#skyGlow)',
+          'class': 'sky-star' + (i === freshIndex ? ' fresh' : '') }, parent);
+      } else if(!small){
+        svgEl('circle', { cx: p[0], cy: p[1], r: 4, 'class': 'sky-slot' }, parent);
+      }
+    });
+  }
+
+  function renderNightSky(){
+    if(!settings.showNightSky) return;
+    var bg = document.getElementById('skyBg');
+    if(!bg.firstChild){
+      // fixed pseudo-random background stars, so the sky looks the same every time
+      var seed = 7;
+      var rnd = function(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+      for(var i = 0; i < 110; i++){
+        var s = svgEl('circle', { cx: (rnd() * 1000).toFixed(1), cy: (rnd() * 380).toFixed(1), r: (0.6 + rnd() * 1.2).toFixed(2), 'class': 'sky-bg' }, bg);
+        s.setAttribute('opacity', (0.25 + rnd() * 0.5).toFixed(2));
+        if(i % 4 === 0){ s.classList.add('sky-twinkle'); s.style.animationDelay = (rnd() * 3.6).toFixed(2) + 's'; }
+      }
+    }
+
+    var p = skyProgress();
+    // today has just become a good day (not while history is still loading at start-up)
+    var pop = !consLoading && skyTodayGood === false && p.todayGood;
+    if(!consLoading) skyTodayGood = p.todayGood;
+
+    // Fill the constellations in order. One finished by today's star stays in
+    // the middle for today, so you get to see it complete.
+    var left = p.stars, focus = 0, collected = [];
+    while(focus < CONSTELLATIONS.length - 1 && left >= CONSTELLATIONS[focus].stars.length){
+      if(left === CONSTELLATIONS[focus].stars.length && p.todayGood) break;
+      left -= CONSTELLATIONS[focus].stars.length;
+      collected.push(focus);
+      focus++;
+    }
+    var con = CONSTELLATIONS[focus];
+    var lit = Math.min(left, con.stars.length);
+
+    var g = document.getElementById('skyCons');
+    g.textContent = '';
+    collected.forEach(function(ci, n){
+      var slot = SKY_SLOTS[n];
+      drawConstellation(CONSTELLATIONS[ci], [slot[0], slot[1], 110], Infinity, true, -1, g);
+      svgEl('text', { x: slot[0] + 55, y: slot[1] + 130, 'class': 'sky-name' }, g).textContent = CONSTELLATIONS[ci].name;
+    });
+    drawConstellation(con, [355, 30, 290], lit, false, pop ? lit - 1 : -1, g);
+
+    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
+    var line = lit < con.stars.length ? '<b>' + con.name + '</b> · ' + lit + ' of ' + con.stars.length + ' stars'
+      : focus === CONSTELLATIONS.length - 1 ? '<b>' + con.name + ' complete!</b> Every constellation collected. More are coming.'
+      : '<b>' + con.name + ' complete!</b> It joins your sky tomorrow.';
+    var names = collected.map(function(ci){ return CONSTELLATIONS[ci].name; });
+    document.getElementById('nightSkyCaption').innerHTML = line +
+      (names.length ? ' · Collected: ' + names.join(', ') : '') +
+      '<br>A star for every day you finish ' + goal + ' of your blocks.' +
+      (consLoading ? ' Counting your days…' : '');
+  }
+
   function renderConsistency(){
+    renderNightSky(); // the sky is drawn from the same history, so it redraws whenever the grid would
     var wrap = document.getElementById('consistencyBlock');
     if(!wrap || !settings.showConsistency) return;
 
