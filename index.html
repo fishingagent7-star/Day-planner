@@ -6,6 +6,7 @@
 <title>Day planner</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%86%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=DM+Sans:wght@400;600&family=Nunito:wght@400;700&display=swap">
 </head>
 <body>
 <div class="wrap">
@@ -60,6 +61,23 @@
 
   <div class="panel" id="settingsPanel" style="display:none;">
     <div class="toolbar">
+      <label class="setting-label">Theme
+        <select id="themeSelect">
+          <option value="original">Original</option>
+          <option value="cards">1 · Soft Cards</option>
+          <option value="night">2 · Night Forest</option>
+          <option value="lake">3 · Lake Blue</option>
+          <option value="sunrise">4 · Sunrise</option>
+          <option value="minimal">5 · Clean Minimal</option>
+          <option value="blocks">6 · Colour Blocks</option>
+          <option value="compact">7 · Compact List</option>
+          <option value="notebook">8 · Notebook</option>
+          <option value="tackle">9 · Tackle Box</option>
+          <option value="bold">10 · Big &amp; Bold</option>
+        </select>
+      </label>
+    </div>
+    <div class="toolbar">
       <label class="setting-label">Background <input type="color" id="bgColorInput" class="cat-color-input"></label>
       <label class="setting-label">Accent <input type="color" id="accentColorInput" class="cat-color-input"></label>
     </div>
@@ -68,6 +86,10 @@
         <select id="fontSelect">
           <option value="serif">Serif (classic)</option>
           <option value="sans">Sans-serif (clean)</option>
+          <option value="modern">Modern (DM Sans)</option>
+          <option value="rounded">Rounded (Nunito)</option>
+          <option value="sturdy">Sturdy (Trebuchet)</option>
+          <option value="big">Big (Verdana)</option>
         </select>
       </label>
       <button id="resetAppearanceBtn">Reset to default</button>

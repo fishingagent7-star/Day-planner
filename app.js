@@ -706,6 +706,7 @@
 
       if(b.tags.length > 0){
         row.style.backgroundColor = tagColor(b.tags[0]);
+        row.style.setProperty('--cat', colorForCategory(b.tags[0])); // used by the Colour Blocks theme
       }
 
       row.addEventListener('dragstart', function(e){
@@ -1533,13 +1534,37 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true };
+  // Ready-made looks. Picking one fills in the normal settings below; the rest
+  // of each look is CSS in styles.css, switched on by <body data-theme="...">.
+  var THEMES = {
+    original: { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
+    cards:    { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
+    night:    { bg:'#16211b', accent:'#7fb894', font:'serif',   dark:true  },
+    lake:     { bg:'#f1f5f8', accent:'#2f5d8a', font:'modern',  dark:false },
+    sunrise:  { bg:'#fbf3ec', accent:'#b0532c', font:'rounded', dark:false },
+    minimal:  { bg:'#fcfcfb', accent:'#111418', font:'modern',  dark:false },
+    blocks:   { bg:'#f6f4ee', accent:'#1f2a24', font:'serif',   dark:false },
+    compact:  { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
+    notebook: { bg:'#fdfbf4', accent:'#2b4c7e', font:'serif',   dark:false },
+    tackle:   { bg:'#f3eee3', accent:'#1f6f78', font:'sturdy',  dark:false },
+    bold:     { bg:'#fffdf7', accent:'#3a5a49', font:'big',     dark:false }
+  };
+  var FONTS = {
+    serif:   "Georgia, 'Iowan Old Style', serif",
+    sans:    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    modern:  "'DM Sans', -apple-system, 'Segoe UI', sans-serif",
+    rounded: "Nunito, 'Trebuchet MS', sans-serif",
+    sturdy:  "'Trebuchet MS', Verdana, sans-serif",
+    big:     "Verdana, Geneva, sans-serif"
+  };
   var settings = Object.assign({}, DEFAULT_SETTINGS);
   var settingsToggle = document.getElementById('settingsToggle');
   var settingsPanel = document.getElementById('settingsPanel');
   var bgColorInput = document.getElementById('bgColorInput');
   var accentColorInput = document.getElementById('accentColorInput');
   var fontSelect = document.getElementById('fontSelect');
+  var themeSelect = document.getElementById('themeSelect');
   var resetAppearanceBtn = document.getElementById('resetAppearanceBtn');
   var darkModeBtn = document.getElementById('darkModeBtn');
   var showProgressToggle = document.getElementById('showProgressToggle');
@@ -1567,10 +1592,9 @@
     }
     document.documentElement.style.setProperty('--accent', settings.accent);
     document.documentElement.style.setProperty('--accent-soft', settings.accent + '22');
-    var fontStack = settings.font === 'sans'
-      ? "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-      : "Georgia, 'Iowan Old Style', serif";
-    document.documentElement.style.setProperty('--font-body', fontStack);
+    document.documentElement.style.setProperty('--font-body', FONTS[settings.font] || FONTS.serif);
+    document.body.dataset.theme = settings.theme;
+    themeSelect.value = settings.theme;
     bgColorInput.value = settings.bg;
     accentColorInput.value = settings.accent;
     fontSelect.value = settings.font;
@@ -1619,6 +1643,11 @@
     applySettings();
     saveSettings();
   });
+  themeSelect.addEventListener('change', function(e){
+    Object.assign(settings, THEMES[e.target.value], { theme: e.target.value });
+    applySettings();
+    saveSettings();
+  });
   resetAppearanceBtn.addEventListener('click', function(){
     settings = Object.assign({}, DEFAULT_SETTINGS);
     applySettings();
@@ -1627,6 +1656,7 @@
 
   darkModeBtn.addEventListener('click', function(){
     settings.dark = !settings.dark;
+    settings.theme = 'original'; // a theme's own colours would clash with plain dark/light mode
     if(settings.dark){
       settings.bg = '#20221f';
       settings.accent = '#7fb69a';
