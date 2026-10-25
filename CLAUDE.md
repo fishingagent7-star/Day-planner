@@ -11,7 +11,9 @@ The owner is learning JavaScript. Keep changes small, explain them simply, and d
 2. Later: a real backend with accounts so the data syncs between laptop and phone.
 3. Keep it simple and free to run.
 
-## Storage (currently `window.storage`, which only exists inside Claude artifacts)
+## Storage (`window.storage`, defined in `storage.js`)
+Outside Claude, `storage.js` stores everything in Supabase (table `planner_items`: `user_id`, `key`, `value`, `updated_at`; row level security lets each signed-in user touch only their own rows) and shows a sign-in screen until someone signs in. Only the publishable key belongs in the code, never the secret / service_role key.
+
 All values are JSON strings. Keys:
 - `plan:YYYY-MM-DD` — array of blocks: `{id, time:"HH:MM", title, notes, tags:[names], done, duration (minutes)}`
 - `categories` — `[{name, color}]`
