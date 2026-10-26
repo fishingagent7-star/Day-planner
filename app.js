@@ -2435,9 +2435,15 @@
   }
 
   // Tap (or Enter / Space) opens the full sky; again closes it back to a strip.
+  // CSS can't animate to a natural height, so measure both heights and slide between them.
   var skyBlock = document.getElementById('nightSkyBlock');
+  var skySvg = document.getElementById('nightSky');
   function toggleSky(){
+    var from = skySvg.getBoundingClientRect().height;
     skyBlock.setAttribute('aria-expanded', skyBlock.classList.toggle('open'));
+    var to = skySvg.getBoundingClientRect().height;
+    var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(!calm && skySvg.animate) skySvg.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 400, easing: 'ease-in-out' });
   }
   skyBlock.addEventListener('click', toggleSky);
   skyBlock.addEventListener('keydown', function(e){
