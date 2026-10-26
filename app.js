@@ -1615,19 +1615,43 @@
     return m < 720 ? 1 - ramp(sun.rise - 60, sun.rise + 30) : ramp(sun.set - 30, sun.set + 60);
   }
 
+  // WCAG contrast between two #rrggbb colours (1 = none, 21 = black on white).
+  function contrast(a, b){
+    function lum(hex){
+      var c = [1, 3, 5].map(function(i){
+        var v = parseInt(hex.substr(i, 2), 16) / 255;
+        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    }
+    var x = lum(a), y = lum(b);
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  }
+
+  // Nudge a text colour towards black or white just until it reaches the target contrast.
+  function readable(base, extreme, bg, target){
+    for(var s = 0; s <= 1; s += 0.05){
+      var c = mixColour(base, extreme, s);
+      if(contrast(c, bg) >= target) return c;
+    }
+    return extreme;
+  }
+
   function applyColours(){
     var root = document.documentElement.style;
     var t = settings.followSun ? nightAmount(new Date()) : (settings.dark ? 1 : 0);
-    // Text can't fade along with the background, or both meet in a middle grey nobody can read.
-    // So backgrounds dim to 25% dark while the text stays dark; at halfway the text flips to its
-    // night colours as the backgrounds jump to 75%, then carry on to full night.
-    var bgT = t < 0.5 ? t * 0.5 : 0.5 + t * 0.5;
-    var textT = t < 0.5 ? 0 : 1;
-    var accent = settings.followSun ? mixColour(settings.accent, NIGHT_ACCENT, textT) : settings.accent;
-    Object.keys(LIGHT).forEach(function(k){
-      root.setProperty(k, mixColour(LIGHT[k], DARK[k], k === '--ink' || k === '--ink-soft' ? textT : bgT));
-    });
-    root.setProperty('--paper', settings.followSun ? mixColour(settings.bg, NIGHT_BG, bgT) : settings.bg);
+    // Backgrounds fade smoothly. Text can't simply fade with them (both would meet in an
+    // unreadable middle grey), so it uses whichever of the day or night colours reads better
+    // on the background right now, nudged towards black or white when it needs to.
+    var paper = settings.followSun ? mixColour(settings.bg, NIGHT_BG, t) : settings.bg;
+    var nightText = contrast('#ffffff', paper) > contrast('#000000', paper);
+    var extreme = nightText ? '#ffffff' : '#000000';
+    var text = nightText ? DARK : LIGHT;
+    Object.keys(LIGHT).forEach(function(k){ root.setProperty(k, mixColour(LIGHT[k], DARK[k], t)); });
+    root.setProperty('--ink', readable(text['--ink'], extreme, paper, 4.5));
+    root.setProperty('--ink-soft', readable(text['--ink-soft'], extreme, paper, 3.5));
+    var accent = settings.followSun ? (nightText ? NIGHT_ACCENT : settings.accent) : settings.accent;
+    root.setProperty('--paper', paper);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');
   }
