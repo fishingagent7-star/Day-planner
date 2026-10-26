@@ -35,6 +35,10 @@
           <stop offset="0" stop-color="#0a1230"/>
           <stop offset="1" stop-color="#23365f"/>
         </linearGradient>
+        <linearGradient id="meteorGrad">
+          <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
+          <stop offset="1" stop-color="#fff6d8" stop-opacity="0.95"/>
+        </linearGradient>
         <filter id="skyGlow" x="-300%" y="-300%" width="700%" height="700%">
           <feGaussianBlur stdDeviation="3" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
@@ -42,6 +46,7 @@
       </defs>
       <rect width="1000" height="380" fill="url(#skyGrad)"/>
       <g id="skyBg"></g>
+      <g id="skyFx"></g>
       <g id="skyCons"></g>
     </svg>
     <p class="night-sky-caption" id="nightSkyCaption"></p>

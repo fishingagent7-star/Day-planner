@@ -2555,6 +2555,7 @@
     var pond = settings.growLook === 'pond';
     document.getElementById('nightSkyBlock').classList.toggle('pond', pond);
     bg.style.display = pond ? 'none' : '';
+    document.getElementById('skyFx').style.display = pond ? 'none' : '';
     document.getElementById('nightSky').setAttribute('aria-label', pond
       ? 'Your fish pond: something new arrives for each good day'
       : 'Your night sky: one star for each good day');
@@ -2605,6 +2606,48 @@
     if(skySvg.animate) skySvg.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 400, easing: 'ease-in-out' });
   }
   skyBlock.addEventListener('click', toggleSky);
+
+  // ---------- shooting stars and satellites ----------
+  // Every 7–13 seconds something crosses the night sky: usually a quick shooting star,
+  // sometimes a slow satellite (one at a time). Spots and directions are random, so
+  // it's different every time. Nothing runs while the pond shows or the tab is hidden.
+  var skyFx = document.getElementById('skyFx');
+  var satelliteCrossing = false;
+  function skyEvent(){
+    setTimeout(skyEvent, 7000 + Math.random() * 6000);
+    if(!settings.showNightSky || settings.growLook === 'pond' || document.hidden || !skyFx.animate) return;
+    var open = skyBlock.classList.contains('open');
+    var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the sky shows
+    if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
+    var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
+    // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
+    var angle = open ? Math.random() * 360 : (Math.random() < 0.5 ? 0 : 180) + Math.random() * 60 - 30;
+    var g = svgEl('g', { transform: 'translate(' + x.toFixed(0) + ' ' + y.toFixed(0) + ') rotate(' + angle.toFixed(0) + ')' }, skyFx);
+    var streak = svgEl('g', {}, g);
+    svgEl('rect', { x: -90, y: -1, width: 90, height: 2, rx: 1, fill: 'url(#meteorGrad)' }, streak);
+    svgEl('circle', { r: 1.8, fill: '#ffffff' }, streak);
+    streak.animate([
+      { transform: 'translateX(0px)', opacity: 0 },
+      { opacity: 1, offset: 0.2 },
+      { opacity: 1, offset: 0.7 },
+      { transform: 'translateX(220px)', opacity: 0 }
+    ], { duration: 900, easing: 'ease-in' }).onfinish = function(){ g.remove(); };
+  }
+  function satellite(open, top, bottom){
+    satelliteCrossing = true;
+    // closed: nearly level, so it stays in the visible strip; open: any direction
+    var deg = open ? Math.random() * 360 : (Math.random() < 0.5 ? 0 : 180) + Math.random() * 12 - 6;
+    var dx = Math.cos(deg * Math.PI / 180), dy = Math.sin(deg * Math.PI / 180);
+    var cx = 300 + Math.random() * 400, cy = top + Math.random() * (bottom - top);
+    var dot = svgEl('circle', { cx: (cx - dx * 600).toFixed(0), cy: (cy - dy * 600).toFixed(0), r: 1.6, fill: '#e9eef7' }, skyFx);
+    dot.animate([
+      { transform: 'translate(0px, 0px)', opacity: 0 },
+      { opacity: 0.9, offset: 0.1 },
+      { opacity: 0.9, offset: 0.9 },
+      { transform: 'translate(' + (dx * 1200).toFixed(0) + 'px, ' + (dy * 1200).toFixed(0) + 'px)', opacity: 0 }
+    ], { duration: 20000 }).onfinish = function(){ dot.remove(); satelliteCrossing = false; };
+  }
+  setTimeout(skyEvent, 4000);
   skyBlock.addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleSky(); }
   });
