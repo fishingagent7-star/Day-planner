@@ -1637,6 +1637,7 @@
     return extreme;
   }
 
+  var lastNightText = null, textFlipTimer = null;
   function applyColours(){
     var root = document.documentElement.style;
     var t = settings.followSun ? nightAmount(new Date()) : (settings.dark ? 1 : 0);
@@ -1645,12 +1646,19 @@
     // on the background right now, nudged towards black or white when it needs to.
     var paper = settings.followSun ? mixColour(settings.bg, NIGHT_BG, t) : settings.bg;
     var nightText = contrast('#ffffff', paper) > contrast('#000000', paper);
+    if(settings.followSun && lastNightText !== null && nightText !== lastNightText){
+      // the text is switching between dark and light: cross-fade it over 2 seconds instead of snapping
+      document.body.classList.add('text-flip');
+      clearTimeout(textFlipTimer);
+      textFlipTimer = setTimeout(function(){ document.body.classList.remove('text-flip'); }, 2500);
+    }
+    lastNightText = nightText;
     var extreme = nightText ? '#ffffff' : '#000000';
     var text = nightText ? DARK : LIGHT;
     Object.keys(LIGHT).forEach(function(k){ root.setProperty(k, mixColour(LIGHT[k], DARK[k], t)); });
     root.setProperty('--ink', readable(text['--ink'], extreme, paper, 4.5));
     root.setProperty('--ink-soft', readable(text['--ink-soft'], extreme, paper, 3.5));
-    var accent = settings.followSun ? (nightText ? NIGHT_ACCENT : settings.accent) : settings.accent;
+    var accent = settings.followSun ? mixColour(settings.accent, NIGHT_ACCENT, t) : settings.accent;
     root.setProperty('--paper', paper);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');

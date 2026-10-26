@@ -999,3 +999,7 @@
   .pond-fish{animation:pond-swim 5s ease-in-out infinite alternate;transform-box:fill-box;}
   .pond-item.fresh{animation:sky-pop .8s ease-out both;transform-box:fill-box;transform-origin:center;}
   @keyframes pond-swim{from{transform:translateX(-7px)} to{transform:translateX(7px)}}
+
+  /* "Darken at sunset": when the text switches between dark and light, app.js adds this
+     class for a moment so the change cross-fades instead of snapping. */
+  body.text-flip, body.text-flip *{transition:color 2s ease, border-color 2s ease;}
