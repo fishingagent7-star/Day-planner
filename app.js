@@ -1534,7 +1534,7 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5 };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, growLook:'sky' };
   // Ready-made looks. Picking one fills in the normal settings below; the rest
   // of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
@@ -1573,6 +1573,7 @@
   var showConsistencyToggle = document.getElementById('showConsistencyToggle');
   var showNightSkyToggle = document.getElementById('showNightSkyToggle');
   var goodDaySelect = document.getElementById('goodDaySelect');
+  var growLookSelect = document.getElementById('growLookSelect');
 
   function applySettings(){
     if(settings.dark){
@@ -1611,6 +1612,7 @@
     document.getElementById('consistencyBlock').style.display = settings.showConsistency ? 'block' : 'none';
     showNightSkyToggle.checked = !!settings.showNightSky;
     goodDaySelect.value = String(settings.goodDay);
+    growLookSelect.value = settings.growLook;
     document.getElementById('nightSkyBlock').style.display = settings.showNightSky ? 'block' : 'none';
     if(settings.showConsistency || settings.showNightSky){ // both are drawn from the same day-by-day history
       if(!consLoaded){ loadConsistencyCache(); } else { renderConsistency(); }
@@ -1675,6 +1677,12 @@
 
   showNightSkyToggle.addEventListener('change', function(e){
     settings.showNightSky = e.target.checked;
+    applySettings();
+    saveSettings();
+  });
+
+  growLookSelect.addEventListener('change', function(e){
+    settings.growLook = e.target.value;
     applySettings();
     saveSettings();
   });
@@ -2382,6 +2390,108 @@
     });
   }
 
+  // ---------- fish pond ----------
+  // Each good day brings the next arrival, in this order. Unlike the sky the
+  // pond never restarts: once everything has arrived, another golden fish
+  // visits every 10 good days. Positions are in the same 1000×380 box as the sky.
+  var POND = [
+    { what:'fish', x:420, y:200, c:'#e8834a', d:-1, name:'your first fish' },
+    { what:'pad', x:300, y:150, name:'a lily pad' },
+    { what:'fish', x:560, y:240, c:'#f2a65a', d:1 },
+    { what:'reeds', x:120, y:175, name:'reeds' },
+    { what:'fish', x:650, y:170, c:'#e8834a', d:-1 },
+    { what:'pad', x:700, y:262, name:'a lily pad' },
+    { what:'flower', x:300, y:146, name:'a water lily' },
+    { what:'fish', x:350, y:250, c:'#d9643a', d:1 },
+    { what:'rocks', x:850, y:252, name:'rocks' },
+    { what:'fish', x:500, y:135, c:'#f2a65a', d:-1 },
+    { what:'reeds', x:880, y:150, name:'more reeds' },
+    { what:'frog', x:700, y:252, name:'a frog' },
+    { what:'fish', x:760, y:212, c:'#e8834a', d:1 },
+    { what:'pad', x:450, y:302, name:'a lily pad' },
+    { what:'fish', x:250, y:212, c:'#f2a65a', d:-1 },
+    { what:'dragonfly', x:600, y:80, name:'a dragonfly' },
+    { what:'fish', x:580, y:312, c:'#d9643a', d:1 },
+    { what:'flower', x:450, y:298, name:'another water lily' },
+    { what:'fish', x:380, y:182, c:'#e8834a', d:-1 },
+    { what:'pad', x:800, y:172, name:'a lily pad' },
+    { what:'fish', x:470, y:262, c:'#f2a65a', d:1 },
+    { what:'dragonfly', x:330, y:70, name:'a second dragonfly' },
+    { what:'fish', x:680, y:122, c:'#d9643a', d:-1 },
+    { what:'fish', x:530, y:200, c:'#f2c14e', d:1, name:'a rare golden fish' }
+  ];
+  var GOLDEN_SPOTS = [[300, 280, -1], [620, 150, 1], [760, 300, -1]];
+
+  function drawPondItem(it, fresh, parent){
+    var g = svgEl('g', { 'class': 'pond-item' + (it.what === 'fish' ? ' pond-fish' : '') + (fresh ? ' fresh' : '') }, parent);
+    var x = it.x, y = it.y;
+    if(it.what === 'fish'){
+      g.style.animationDelay = '-' + ((x * 7) % 50) / 10 + 's'; // fish don't all swim in step
+      svgEl('ellipse', { cx: x, cy: y, rx: 16, ry: 8, fill: it.c }, g);
+      svgEl('path', { d: 'M' + (x + it.d * -14) + ' ' + y + ' L' + (x + it.d * -27) + ' ' + (y - 8) + ' L' + (x + it.d * -27) + ' ' + (y + 8) + ' Z', fill: it.c }, g);
+      svgEl('circle', { cx: x + it.d * 9, cy: y - 2, r: 1.6, fill: '#1f2a24' }, g);
+    } else if(it.what === 'pad'){
+      svgEl('path', { d: 'M' + x + ' ' + y + ' L' + (x + 29) + ' ' + (y - 4) + ' A30 16 0 1 0 ' + (x + 29) + ' ' + (y + 4) + ' Z', fill: '#5e9e62' }, g);
+    } else if(it.what === 'flower'){
+      [[0, -7], [7, -2], [4, 6], [-4, 6], [-7, -2]].forEach(function(o){
+        svgEl('circle', { cx: x + o[0], cy: y + o[1], r: 6, fill: '#f4b6c8' }, g);
+      });
+      svgEl('circle', { cx: x, cy: y, r: 3.5, fill: '#f2c14e' }, g);
+    } else if(it.what === 'reeds'){
+      [[-14, -52], [0, -66], [14, -46]].forEach(function(o){
+        svgEl('line', { x1: x + o[0] / 2, y1: y + 30, x2: x + o[0], y2: y + o[1], stroke: '#5e8a4f', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+        svgEl('ellipse', { cx: x + o[0], cy: y + o[1] + 10, rx: 4, ry: 11, fill: '#8a5a35' }, g);
+      });
+    } else if(it.what === 'rocks'){
+      svgEl('ellipse', { cx: x - 16, cy: y + 4, rx: 22, ry: 13, fill: '#8e938c' }, g);
+      svgEl('ellipse', { cx: x + 14, cy: y + 8, rx: 16, ry: 10, fill: '#a3a8a0' }, g);
+      svgEl('ellipse', { cx: x + 2, cy: y - 6, rx: 13, ry: 9, fill: '#b5b9b1' }, g);
+    } else if(it.what === 'frog'){
+      svgEl('ellipse', { cx: x, cy: y, rx: 15, ry: 10, fill: '#6da34d' }, g);
+      [-8, 8].forEach(function(dx){
+        svgEl('circle', { cx: x + dx, cy: y - 9, r: 5, fill: '#6da34d' }, g);
+        svgEl('circle', { cx: x + dx, cy: y - 10, r: 3, fill: '#fbfaf6' }, g);
+        svgEl('circle', { cx: x + dx, cy: y - 10, r: 1.4, fill: '#1f2a24' }, g);
+      });
+    } else if(it.what === 'dragonfly'){
+      svgEl('line', { x1: x - 18, y1: y, x2: x + 14, y2: y, stroke: '#2f6f8a', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
+      [[-4, -9], [6, -9], [-4, 9], [6, 9]].forEach(function(o){
+        svgEl('ellipse', { cx: x + o[0], cy: y + o[1], rx: 5, ry: 10, fill: '#dff1f7', opacity: 0.75 }, g);
+      });
+    }
+  }
+
+  function drawPond(p, pop){
+    var g = document.getElementById('skyCons');
+    g.textContent = '';
+    svgEl('rect', { width: 1000, height: 380, fill: '#a9cc92' }, g);
+    svgEl('ellipse', { cx: 500, cy: 205, rx: 430, ry: 160, fill: '#5f9cb3' }, g);
+    svgEl('ellipse', { cx: 500, cy: 200, rx: 410, ry: 142, fill: '#8fc4d5' }, g);
+    svgEl('ellipse', { cx: 520, cy: 205, rx: 60, ry: 14, fill: 'none', stroke: '#d8ecf2', 'stroke-width': 2, opacity: 0.7 }, g);
+
+    var arrived = Math.min(p.stars, POND.length);
+    for(var i = 0; i < arrived; i++) drawPondItem(POND[i], pop && i === p.stars - 1, g);
+    // after everything has arrived, a golden fish visits every 10 good days
+    var extra = Math.max(0, Math.min(GOLDEN_SPOTS.length, Math.floor((p.stars - POND.length) / 10)));
+    for(var j = 0; j < extra; j++){
+      var s = GOLDEN_SPOTS[j];
+      drawPondItem({ what: 'fish', x: s[0], y: s[1], c: '#f2c14e', d: s[2] }, pop && j === extra - 1 && (p.stars - POND.length) % 10 === 0, g);
+    }
+
+    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
+    var next = POND[arrived];
+    var past = p.stars - POND.length; // good days since everything arrived
+    var newest = p.stars <= POND.length ? (POND[p.stars - 1] && (POND[p.stars - 1].name || 'another fish'))
+      : (past % 10 === 0 && past / 10 <= GOLDEN_SPOTS.length ? 'a golden fish' : null);
+    var line = pop && newest ? '<b>New: ' + newest + '!</b>'
+      : '<b>Fish pond</b> · ' + p.stars + ' good day' + (p.stars === 1 ? '' : 's');
+    var nextText = next ? ' · Next: ' + (next.name || 'another fish') : ' · A golden fish visits every 10 good days';
+    document.getElementById('nightSkyCaption').innerHTML = line + nextText +
+      '<span class="sky-hint"> · Tap to open</span>' +
+      '<span class="sky-more"><br>Something new arrives every day you finish ' + goal + ' of your blocks.' +
+      (consLoading ? ' Counting your days…' : '') + '</span>';
+  }
+
   function renderNightSky(){
     if(!settings.showNightSky) return;
     var bg = document.getElementById('skyBg');
@@ -2400,6 +2510,15 @@
     // today has just become a good day (not while history is still loading at start-up)
     var pop = !consLoading && skyTodayGood === false && p.todayGood;
     if(!consLoading) skyTodayGood = p.todayGood;
+
+    // The pond is another look for the same good days.
+    var pond = settings.growLook === 'pond';
+    document.getElementById('nightSkyBlock').classList.toggle('pond', pond);
+    bg.style.display = pond ? 'none' : '';
+    document.getElementById('nightSky').setAttribute('aria-label', pond
+      ? 'Your fish pond: something new arrives for each good day'
+      : 'Your night sky: one star for each good day');
+    if(pond){ drawPond(p, pop); return; }
 
     // Fill the constellations in order. One finished by today's star stays in
     // the middle for today, so you get to see it complete.
