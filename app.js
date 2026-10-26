@@ -1605,7 +1605,8 @@
   function applyColours(){
     var root = document.documentElement.style;
     var night = settings.followSun ? isNight(new Date()) : !!settings.dark;
-    if(settings.followSun && wasNight !== null && night !== wasNight){
+    var switched = settings.followSun && wasNight !== null && night !== wasNight;
+    if(switched){
       // the sun has just set or risen while the planner is open: glide over 5 seconds
       document.body.classList.add('sun-switch');
       clearTimeout(sunSwitchTimer);
@@ -1618,6 +1619,7 @@
     root.setProperty('--paper', settings.followSun && night ? NIGHT_BG : settings.bg);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');
+    if(switched) renderNightSky(); // the pond turns to evening (or morning) with everything else
   }
   // check every minute whether the sun has set or risen while the planner stays open
   setInterval(function(){ if(settings.followSun) applyColours(); }, 60000);
@@ -2501,13 +2503,39 @@
     }
   }
 
+  // The pond's water and banks are made once and only recoloured, so at sunset they glide
+  // to evening colours with the planner's 5-second sun switch. Evening (whenever the planner
+  // is in dark mode) also shows the moon's reflection and fireflies.
+  function drawPondBase(evening){
+    var base = document.getElementById('pondBase');
+    if(!base.firstChild){
+      svgEl('rect', { id: 'pondGrass', width: 1000, height: 380 }, base);
+      svgEl('ellipse', { id: 'pondEdge', cx: 500, cy: 205, rx: 430, ry: 160 }, base);
+      svgEl('ellipse', { id: 'pondWater', cx: 500, cy: 200, rx: 410, ry: 142 }, base);
+      svgEl('ellipse', { id: 'pondShine', cx: 520, cy: 205, rx: 60, ry: 14, fill: 'none', 'stroke-width': 2, opacity: 0.7 }, base);
+      var moon = svgEl('g', { id: 'pondMoon' }, base);
+      svgEl('ellipse', { cx: 640, cy: 182, rx: 26, ry: 9, fill: '#f6e7b0', opacity: 0.6 }, moon);
+      svgEl('line', { x1: 612, y1: 196, x2: 668, y2: 196, stroke: '#f6e7b0', 'stroke-width': 1.5, opacity: 0.4 }, moon);
+      svgEl('line', { x1: 624, y1: 205, x2: 656, y2: 205, stroke: '#f6e7b0', 'stroke-width': 1.5, opacity: 0.3 }, moon);
+      var flies = svgEl('g', { id: 'pondFireflies' }, base);
+      [[150, 120], [220, 300], [330, 90], [420, 330], [560, 60], [690, 320], [800, 110], [870, 260], [250, 200], [760, 175]].forEach(function(f, i){
+        var c = svgEl('circle', { cx: f[0], cy: f[1], r: 2.2, fill: '#f9ee9a', filter: 'url(#skyGlow)', 'class': 'pond-firefly' }, flies);
+        c.style.animationDelay = '-' + (i * 0.7).toFixed(1) + 's';
+      });
+    }
+    function paint(id, attr, day, night){ document.getElementById(id).setAttribute(attr, evening ? night : day); }
+    paint('pondGrass', 'fill', '#a9cc92', '#2b3d2c');
+    paint('pondEdge', 'fill', '#5f9cb3', '#183447');
+    paint('pondWater', 'fill', '#8fc4d5', '#24506a');
+    paint('pondShine', 'stroke', '#d8ecf2', '#9fb9c6');
+    paint('pondMoon', 'opacity', 0, 1);
+    paint('pondFireflies', 'opacity', 0, 1);
+  }
+
   function drawPond(p, pop){
     var g = document.getElementById('skyCons');
     g.textContent = '';
-    svgEl('rect', { width: 1000, height: 380, fill: '#a9cc92' }, g);
-    svgEl('ellipse', { cx: 500, cy: 205, rx: 430, ry: 160, fill: '#5f9cb3' }, g);
-    svgEl('ellipse', { cx: 500, cy: 200, rx: 410, ry: 142, fill: '#8fc4d5' }, g);
-    svgEl('ellipse', { cx: 520, cy: 205, rx: 60, ry: 14, fill: 'none', stroke: '#d8ecf2', 'stroke-width': 2, opacity: 0.7 }, g);
+    drawPondBase(wasNight === true);
 
     var arrived = Math.min(p.stars, POND.length);
     pondArrived = arrived;
@@ -2558,6 +2586,8 @@
     bg.style.display = pond ? 'none' : '';
     document.getElementById('skyFx').style.display = pond ? 'none' : '';
     document.getElementById('pondFx').style.display = pond ? '' : 'none';
+    document.getElementById('pondBase').style.display = pond ? '' : 'none';
+    document.getElementById('nightSkyBlock').classList.toggle('evening', pond && wasNight === true);
     document.getElementById('nightSky').setAttribute('aria-label', pond
       ? 'Your fish pond: something new arrives for each good day'
       : 'Your night sky: one star for each good day');

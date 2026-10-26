@@ -1005,3 +1005,9 @@
   body.sun-switch, body.sun-switch *{transition:background-color 5s ease, color 5s ease, border-color 5s ease;}
   /* pond moments (ripples, jumping fish) scale and turn around their own centre */
   .pond-ring, .pond-jumper{transform-box:fill-box;transform-origin:center;}
+
+  /* evening pond: dimmer fish and plants, fireflies; glides with the 5-second sun switch */
+  .night-sky.evening #skyCons{filter:brightness(.72) saturate(.85);}
+  body.sun-switch #pondBase, body.sun-switch #pondBase *, body.sun-switch #skyCons{transition:fill 5s ease, stroke 5s ease, opacity 5s ease, filter 5s ease;}
+  .pond-firefly{animation:pond-firefly 4s ease-in-out infinite alternate;}
+  @keyframes pond-firefly{0%{transform:translate(0px, 0px);opacity:.15} 50%{opacity:1} 100%{transform:translate(10px, -8px);opacity:.3}}
