@@ -30,14 +30,12 @@ API: `get(key)` returns `{key, value}` (may return null OR throw when the key is
 - **Dates:** build day keys from the LOCAL date (`localDateStr`). Never use `toISOString()`: it shifts the day in Sydney (UTC+10/+11).
 - **Loading a day is async:** build the day privately and ignore results from older loads (`loadSeq`), otherwise a slow load can land on the wrong day and get overwritten.
 - **Saving:** take the JSON snapshot at the moment of the edit, keyed to that day, and flush pending saves when switching days (`pendingSaves`, `flushSaves`).
-- **A failed read must not look like "empty":** templates can only be saved once they loaded successfully (`templatesState`). Categories and recurring rules do NOT have this protection yet.
+- **A failed read must not look like "empty":** templates, categories and recurring rules can only be saved once they loaded successfully (`templatesState`, `categoriesState`, `recurringState`; categories and recurring rules load through `loadProtected`, which retries and checks the key list).
 - **Missing keys:** treat as empty (`safeGet`).
 - **Redraws:** the list is briefly emptied while re-rendering; hold its height and scroll position or the page jumps to the top.
 
 ## Known gaps
-- Categories and recurring rules lack the failed-read protection templates have.
 - Some days may be duplicates of the previous day, caused by an old bug (before ~11am an empty day could copy the day before). Not cleaned up.
-- Nothing syncs between devices.
 
 ## Suggested first steps
 Outside Claude, `window.storage` doesn't exist, so the app cannot run at all until that is replaced. Do that first so every later step can actually be checked in a browser.

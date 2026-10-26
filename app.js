@@ -74,16 +74,29 @@
   }
 
   var recurringRules = []; // { id, templateName, weekdays:[0-6] }
+  // Like templates: 'ok' only once we really know what's stored. While 'loading' or
+  // 'failed', adding and removing rules is paused so a failed read can't wipe them.
+  var recurringState = 'loading';
 
   function loadRecurringRules(){
-    return window.storage.get('recurring').then(function(res){
-      if(res && res.value){
-        try{ recurringRules = JSON.parse(res.value); }catch(e){ recurringRules = []; }
-      }
-    }).catch(function(){});
+    return loadProtected('recurring').then(function(text){
+      recurringRules = text ? JSON.parse(text) : []; // a parse error counts as a failed read
+      recurringState = 'ok';
+    }).catch(function(){
+      recurringState = 'failed';
+    });
+  }
+
+  function recurringReady(){
+    if(recurringState === 'ok') return true;
+    setTemplateStatus(recurringState === 'loading'
+      ? 'Still loading your recurring rules — try again in a moment.'
+      : 'Your recurring rules didn’t load, so changes are paused to keep them safe. Reload to try again.');
+    return false;
   }
 
   function saveRecurringRules(){
+    if(recurringState !== 'ok') return Promise.resolve(); // never save over rules that didn't load
     return window.storage.set('recurring', JSON.stringify(recurringRules)).catch(function(){});
   }
 
@@ -190,28 +203,54 @@
 
   // ---------- persistence ----------
 
+  // Read a key that must never be mistaken for "empty" when the read fails (otherwise the
+  // next save would overwrite the real data with nothing). Resolves with the saved text, or
+  // null when nothing is saved yet; rejects if it still can't be read after three tries.
+  // Some storage throws for a missing key, so a failed read asks the key list, which doesn't.
+  function loadProtected(key, attempt){
+    attempt = attempt || 0;
+    return window.storage.get(key).then(function(res){
+      return res && res.value ? res.value : null;
+    }).catch(function(){
+      return window.storage.list(key).then(function(l){
+        if(l && l.keys && l.keys.indexOf(key) !== -1) throw new Error(key + ' exists but could not be read');
+        return null;
+      });
+    }).catch(function(err){
+      if(attempt >= 2) throw err;
+      return new Promise(function(r){ setTimeout(r, 800 * (attempt + 1)); }).then(function(){
+        return loadProtected(key, attempt + 1);
+      });
+    });
+  }
+
+  // Like templates: 'ok' only once we really know what's stored. While 'loading' or
+  // 'failed', the category editor is replaced by a message so nothing can be saved over them.
+  var categoriesState = 'loading';
+
   function loadCategories(){
-    window.storage.get('categories').then(function(res){
-      if(res && res.value){
-        try{
-          var parsed = JSON.parse(res.value);
+    return loadProtected('categories').then(function(text){
+      if(text){
+        // a parse error counts as a failed read
+        TAGS = JSON.parse(text).map(function(t, i){
           // migrate old plain-string format to {name,color}
-          TAGS = parsed.map(function(t, i){
-            if(typeof t === 'string'){
-              var fallback = DEFAULT_TAGS[i % DEFAULT_TAGS.length].color;
-              return { name: t, color: fallback };
-            }
-            return t;
-          });
-        }catch(e){ TAGS = DEFAULT_TAGS.slice(); }
+          if(typeof t === 'string'){
+            var fallback = DEFAULT_TAGS[i % DEFAULT_TAGS.length].color;
+            return { name: t, color: fallback };
+          }
+          return t;
+        });
       }
+      categoriesState = 'ok';
       renderCatManager();
     }).catch(function(){
+      categoriesState = 'failed';
       renderCatManager();
     });
   }
 
   function saveCategories(){
+    if(categoriesState !== 'ok') return; // never save over categories that didn't load
     clearTimeout(catSaveTimer);
     catSaveTimer = setTimeout(function(){
       window.storage.set('categories', JSON.stringify(TAGS)).catch(function(){});
@@ -316,6 +355,12 @@
   function renderCatManager(){
     var wrap = document.getElementById('catManager');
     wrap.innerHTML = '';
+    if(categoriesState !== 'ok'){
+      wrap.textContent = categoriesState === 'loading'
+        ? 'Loading your categories…'
+        : 'Your categories didn’t load, so editing them is paused to keep them safe. Reload to try again.';
+      return;
+    }
     TAGS.forEach(function(cat){
       var chip = document.createElement('span');
       chip.className = 'cat-chip';
@@ -1478,6 +1523,7 @@
       del.className = 'danger';
       del.textContent = 'Remove';
       del.addEventListener('click', function(){
+        if(!recurringReady()) return;
         recurringRules = recurringRules.filter(function(x){ return x.id !== r.id; });
         saveRecurringRules().then(renderRecurList);
       });
@@ -1489,6 +1535,7 @@
   }
 
   addRecurBtn.addEventListener('click', function(){
+    if(!recurringReady()) return;
     var name = recurTemplateSelect.value;
     if(!name){
       setTemplateStatus('Save a template first, then come back here');
