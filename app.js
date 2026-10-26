@@ -1534,7 +1534,7 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, growLook:'sky' };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, growLook:'sky', followSun:false };
   // Ready-made looks. Picking one fills in the normal settings below; the rest
   // of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
@@ -1574,27 +1574,69 @@
   var showNightSkyToggle = document.getElementById('showNightSkyToggle');
   var goodDaySelect = document.getElementById('goodDaySelect');
   var growLookSelect = document.getElementById('growLookSelect');
+  var followSunToggle = document.getElementById('followSunToggle');
+
+  // ---------- day and night colours ----------
+  // The Original look's light and dark colours. Dark mode uses the dark set;
+  // "Darken at sunset" blends from light to dark as the sun goes down, and back at sunrise.
+  var LIGHT = { '--ink':'#1f2a24', '--ink-soft':'#5b6b60', '--line':'#d9d4c6', '--line-strong':'#b9b2a0', '--surface':'#ffffff', '--surface-alt':'#fbfaf6' };
+  var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924' };
+  var NIGHT_BG = '#20221f', NIGHT_ACCENT = '#7fb69a';
+
+  // Blend two #rrggbb colours: t = 0 gives a, t = 1 gives b.
+  function mixColour(a, b, t){
+    if(t <= 0) return a;
+    if(t >= 1) return b;
+    var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
+    return '#' + [16, 8, 0].map(function(s){
+      var x = (pa >> s) & 255, y = (pb >> s) & 255;
+      return Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
+    }).join('');
+  }
+
+  // Today's sunrise and sunset, in minutes after local midnight (NOAA's sun formula).
+  // shortcut: always Sydney's sun; ask for the user's location if other people use the app.
+  function sunTimes(date){
+    var LAT = -33.87, LNG = 151.21, rad = Math.PI / 180;
+    var dayOfYear = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(date.getFullYear(), 0, 0)) / 86400000);
+    var g = 2 * Math.PI / 365 * (dayOfYear - 1);
+    var eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
+    var decl = 0.006918 - 0.399912 * Math.cos(g) + 0.070257 * Math.sin(g) - 0.006758 * Math.cos(2 * g) + 0.000907 * Math.sin(2 * g) - 0.002697 * Math.cos(3 * g) + 0.00148 * Math.sin(3 * g);
+    var ha = Math.acos(Math.cos(90.833 * rad) / (Math.cos(LAT * rad) * Math.cos(decl)) - Math.tan(LAT * rad) * Math.tan(decl)) / rad;
+    var tz = -date.getTimezoneOffset(); // the device's minutes ahead of UTC, daylight saving included
+    return { rise: 720 - 4 * (LNG + ha) - eqTime + tz, set: 720 - 4 * (LNG - ha) - eqTime + tz };
+  }
+
+  // How "night" it is right now, from 0 (day) to 1 (night): fades from 30 min before
+  // sunset to an hour after, and back from an hour before sunrise to 30 min after.
+  function nightAmount(now){
+    var sun = sunTimes(now), m = now.getHours() * 60 + now.getMinutes();
+    function ramp(from, to){ return Math.min(1, Math.max(0, (m - from) / (to - from))); }
+    return m < 720 ? 1 - ramp(sun.rise - 60, sun.rise + 30) : ramp(sun.set - 30, sun.set + 60);
+  }
+
+  function applyColours(){
+    var root = document.documentElement.style;
+    var t = settings.followSun ? nightAmount(new Date()) : (settings.dark ? 1 : 0);
+    // Text can't fade along with the background, or both meet in a middle grey nobody can read.
+    // So backgrounds dim to 25% dark while the text stays dark; at halfway the text flips to its
+    // night colours as the backgrounds jump to 75%, then carry on to full night.
+    var bgT = t < 0.5 ? t * 0.5 : 0.5 + t * 0.5;
+    var textT = t < 0.5 ? 0 : 1;
+    var accent = settings.followSun ? mixColour(settings.accent, NIGHT_ACCENT, textT) : settings.accent;
+    Object.keys(LIGHT).forEach(function(k){
+      root.setProperty(k, mixColour(LIGHT[k], DARK[k], k === '--ink' || k === '--ink-soft' ? textT : bgT));
+    });
+    root.setProperty('--paper', settings.followSun ? mixColour(settings.bg, NIGHT_BG, bgT) : settings.bg);
+    root.setProperty('--accent', accent);
+    root.setProperty('--accent-soft', accent + '22');
+  }
+  // keep the fade moving while the planner stays open
+  setInterval(function(){ if(settings.followSun) applyColours(); }, 60000);
 
   function applySettings(){
-    if(settings.dark){
-      document.documentElement.style.setProperty('--paper', settings.bg);
-      document.documentElement.style.setProperty('--ink', '#eceae4');
-      document.documentElement.style.setProperty('--ink-soft', '#a9a89f');
-      document.documentElement.style.setProperty('--line', '#3a3d38');
-      document.documentElement.style.setProperty('--line-strong', '#54574f');
-      document.documentElement.style.setProperty('--surface', '#2a2d28');
-      document.documentElement.style.setProperty('--surface-alt', '#262924');
-    } else {
-      document.documentElement.style.setProperty('--paper', settings.bg);
-      document.documentElement.style.setProperty('--ink', '#1f2a24');
-      document.documentElement.style.setProperty('--ink-soft', '#5b6b60');
-      document.documentElement.style.setProperty('--line', '#d9d4c6');
-      document.documentElement.style.setProperty('--line-strong', '#b9b2a0');
-      document.documentElement.style.setProperty('--surface', '#ffffff');
-      document.documentElement.style.setProperty('--surface-alt', '#fbfaf6');
-    }
-    document.documentElement.style.setProperty('--accent', settings.accent);
-    document.documentElement.style.setProperty('--accent-soft', settings.accent + '22');
+    applyColours();
+    followSunToggle.checked = !!settings.followSun;
     document.documentElement.style.setProperty('--font-body', FONTS[settings.font] || FONTS.serif);
     document.body.dataset.theme = settings.theme;
     themeSelect.value = settings.theme;
@@ -1652,6 +1694,7 @@
   });
   themeSelect.addEventListener('change', function(e){
     Object.assign(settings, THEMES[e.target.value], { theme: e.target.value });
+    if(e.target.value !== 'original') settings.followSun = false; // other themes have their own colours
     applySettings();
     saveSettings();
   });
@@ -1664,13 +1707,22 @@
   darkModeBtn.addEventListener('click', function(){
     settings.dark = !settings.dark;
     settings.theme = 'original'; // a theme's own colours would clash with plain dark/light mode
+    settings.followSun = false;  // choosing dark or light by hand switches off the sunset fade
     if(settings.dark){
-      settings.bg = '#20221f';
-      settings.accent = '#7fb69a';
+      settings.bg = NIGHT_BG;
+      settings.accent = NIGHT_ACCENT;
     } else {
       settings.bg = DEFAULT_SETTINGS.bg;
       settings.accent = DEFAULT_SETTINGS.accent;
     }
+    applySettings();
+    saveSettings();
+  });
+
+  followSunToggle.addEventListener('change', function(e){
+    // the fade goes between the Original light and dark colours, so start from the Original look
+    if(e.target.checked) Object.assign(settings, THEMES.original, { theme: 'original' });
+    settings.followSun = e.target.checked;
     applySettings();
     saveSettings();
   });
