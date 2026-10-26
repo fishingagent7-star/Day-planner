@@ -992,4 +992,4 @@
   .sky-star.fresh{animation:sky-pop .8s ease-out both;transform-box:fill-box;transform-origin:center;}
   @keyframes sky-pop{0%{opacity:0;transform:scale(.2)} 60%{opacity:1;transform:scale(1.9)} 100%{transform:scale(1)}}
   @keyframes sky-twinkle{0%,100%{opacity:.9} 50%{opacity:.25}}
-  @media (prefers-reduced-motion: reduce){ .sky-twinkle, .sky-star.fresh{animation:none;} }
+  /* The pop and twinkle play even with "reduce motion" on: the owner asked for them, and both are small. */
