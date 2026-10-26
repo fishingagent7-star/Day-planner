@@ -1003,3 +1003,5 @@
   /* "Darken at sunset": when the sun sets or rises while the planner is open, app.js adds
      this class for a moment so day and night colours glide into each other over 5 seconds. */
   body.sun-switch, body.sun-switch *{transition:background-color 5s ease, color 5s ease, border-color 5s ease;}
+  /* pond moments (ripples, jumping fish) scale and turn around their own centre */
+  .pond-ring, .pond-jumper{transform-box:fill-box;transform-origin:center;}

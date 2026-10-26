@@ -2463,7 +2463,7 @@
   var GOLDEN_SPOTS = [[300, 280, -1], [620, 150, 1], [760, 300, -1]];
 
   function drawPondItem(it, fresh, parent){
-    var g = svgEl('g', { 'class': 'pond-item' + (it.what === 'fish' ? ' pond-fish' : '') + (fresh ? ' fresh' : '') }, parent);
+    var g = svgEl('g', { 'class': 'pond-item pond-' + it.what + (fresh ? ' fresh' : '') }, parent);
     var x = it.x, y = it.y;
     if(it.what === 'fish'){
       g.style.animationDelay = '-' + ((x * 7) % 50) / 10 + 's'; // fish don't all swim in step
@@ -2510,6 +2510,7 @@
     svgEl('ellipse', { cx: 520, cy: 205, rx: 60, ry: 14, fill: 'none', stroke: '#d8ecf2', 'stroke-width': 2, opacity: 0.7 }, g);
 
     var arrived = Math.min(p.stars, POND.length);
+    pondArrived = arrived;
     for(var i = 0; i < arrived; i++) drawPondItem(POND[i], pop && i === p.stars - 1, g);
     // after everything has arrived, a golden fish visits every 10 good days
     var extra = Math.max(0, Math.min(GOLDEN_SPOTS.length, Math.floor((p.stars - POND.length) / 10)));
@@ -2556,6 +2557,7 @@
     document.getElementById('nightSkyBlock').classList.toggle('pond', pond);
     bg.style.display = pond ? 'none' : '';
     document.getElementById('skyFx').style.display = pond ? 'none' : '';
+    document.getElementById('pondFx').style.display = pond ? '' : 'none';
     document.getElementById('nightSky').setAttribute('aria-label', pond
       ? 'Your fish pond: something new arrives for each good day'
       : 'Your night sky: one star for each good day');
@@ -2607,17 +2609,19 @@
   }
   skyBlock.addEventListener('click', toggleSky);
 
-  // ---------- shooting stars and satellites ----------
-  // Every 7–13 seconds something crosses the night sky: usually a quick shooting star,
-  // sometimes a slow satellite (one at a time). Spots and directions are random, so
-  // it's different every time. Nothing runs while the pond shows or the tab is hidden.
+  // ---------- shooting stars, satellites and pond moments ----------
+  // Every 7–13 seconds something small happens. In the sky: usually a quick shooting
+  // star, sometimes a slow satellite (one at a time). In the pond: see pondEvent.
+  // Spots and directions are random, so it's different every time. Nothing runs
+  // while the tab is hidden.
   var skyFx = document.getElementById('skyFx');
   var satelliteCrossing = false;
   function skyEvent(){
     setTimeout(skyEvent, 7000 + Math.random() * 6000);
-    if(!settings.showNightSky || settings.growLook === 'pond' || document.hidden || !skyFx.animate) return;
+    if(!settings.showNightSky || document.hidden || !skyFx.animate) return;
     var open = skyBlock.classList.contains('open');
-    var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the sky shows
+    var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
+    if(settings.growLook === 'pond'){ pondEvent(open, top, bottom); return; }
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
@@ -2647,6 +2651,100 @@
       { transform: 'translate(' + (dx * 1200).toFixed(0) + 'px, ' + (dy * 1200).toFixed(0) + 'px)', opacity: 0 }
     ], { duration: 20000 }).onfinish = function(){ dot.remove(); satelliteCrossing = false; };
   }
+  // Pond moments: mostly ripples and jumping fish, now and then a duck paddling across
+  // (one at a time). Once earned, the frog hops and the dragonflies dart, but only
+  // when the pond is open, since they sit outside the thin closed strip.
+  var pondFx = document.getElementById('pondFx');
+  var duckSwimming = false, pondArrived = 0;
+  var POND_FROG = POND.findIndex(function(it){ return it.what === 'frog'; });
+  var POND_DRAGONFLY = POND.findIndex(function(it){ return it.what === 'dragonfly'; });
+
+  function pondEvent(open, top, bottom){
+    var choices = ['ripple', 'ripple', 'ripple', 'jump', 'jump'];
+    if(!duckSwimming) choices.push('duck');
+    if(open && pondArrived > POND_FROG) choices.push('frog', 'frog');
+    if(open && pondArrived > POND_DRAGONFLY) choices.push('dragonfly', 'dragonfly');
+    var pick = choices[Math.floor(Math.random() * choices.length)];
+    var spot = pointInWater(top, bottom);
+    if(pick === 'ripple') ripple(spot[0], spot[1]);
+    else if(pick === 'jump') jump(spot[0], spot[1]);
+    else if(pick === 'duck') duck(top, bottom);
+    else if(pick === 'frog') frogHop();
+    else dragonflyDart();
+  }
+
+  // a random spot on the water, inside the given band
+  function pointInWater(top, bottom){
+    for(var i = 0; i < 20; i++){
+      var x = 140 + Math.random() * 720, y = top + Math.random() * (bottom - top);
+      if(Math.pow((x - 500) / 380, 2) + Math.pow((y - 200) / 125, 2) < 1) return [x, y];
+    }
+    return [500, 200];
+  }
+
+  // two rings spreading out across the water
+  function ripple(x, y){
+    [0, 350].forEach(function(lag){
+      var ring = svgEl('ellipse', { cx: x, cy: y, rx: 38, ry: 13, fill: 'none', stroke: '#eef8fb', 'stroke-width': 1.6, 'vector-effect': 'non-scaling-stroke', 'class': 'pond-ring' }, pondFx);
+      ring.animate([{ transform: 'scale(0.1)', opacity: 0.9 }, { transform: 'scale(1)', opacity: 0 }],
+        { duration: 2000, delay: lag, easing: 'ease-out', fill: 'backwards' }).onfinish = function(){ ring.remove(); };
+    });
+  }
+
+  // a fish leaps out in an arc and splashes back in
+  function jump(x, y){
+    var d = Math.random() < 0.5 ? 1 : -1;
+    var g = svgEl('g', { 'class': 'pond-jumper' }, pondFx);
+    drawPondItem({ what: 'fish', x: x, y: y, c: ['#e8834a', '#f2a65a', '#d9643a'][Math.floor(Math.random() * 3)], d: d }, false, g);
+    ripple(x, y);
+    g.animate([
+      { transform: 'translate(0px, 0px) rotate(' + (-35 * d) + 'deg)', opacity: 0 },
+      { transform: 'translate(' + (28 * d) + 'px, -36px) rotate(0deg)', opacity: 1, offset: 0.5 },
+      { transform: 'translate(' + (56 * d) + 'px, 0px) rotate(' + (35 * d) + 'deg)', opacity: 0 }
+    ], { duration: 1100, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); ripple(x + 56 * d, y); };
+  }
+
+  // a duck paddles slowly across, leaving a small wake
+  function duck(top, bottom){
+    duckSwimming = true;
+    var d = Math.random() < 0.5 ? 1 : -1, y = top + Math.random() * (bottom - top), x = d > 0 ? 170 : 830;
+    var g = svgEl('g', {}, pondFx);
+    svgEl('path', { d: 'M' + (x - d * 16) + ' ' + (y + 4) + ' L' + (x - d * 40) + ' ' + (y - 6) + ' M' + (x - d * 16) + ' ' + (y + 4) + ' L' + (x - d * 40) + ' ' + (y + 14), stroke: '#eef8fb', 'stroke-width': 1.5, opacity: 0.7, fill: 'none' }, g);
+    svgEl('ellipse', { cx: x, cy: y, rx: 18, ry: 9, fill: '#8a7560' }, g);
+    svgEl('circle', { cx: x + d * 13, cy: y - 10, r: 7, fill: '#2f6b4a' }, g);
+    svgEl('path', { d: 'M' + (x + d * 19) + ' ' + (y - 11) + ' L' + (x + d * 27) + ' ' + (y - 9) + ' L' + (x + d * 19) + ' ' + (y - 7) + ' Z', fill: '#f2b33d' }, g);
+    svgEl('circle', { cx: x + d * 15, cy: y - 12, r: 1.3, fill: '#1f2a24' }, g);
+    g.animate([
+      { transform: 'translateX(0px)', opacity: 0 },
+      { opacity: 1, offset: 0.08 },
+      { opacity: 1, offset: 0.92 },
+      { transform: 'translateX(' + (660 * d) + 'px)', opacity: 0 }
+    ], { duration: 24000 }).onfinish = function(){ g.remove(); duckSwimming = false; };
+  }
+
+  // the frog hops up and lands back on its lily pad with a ripple
+  function frogHop(){
+    var frog = document.querySelector('#skyCons .pond-frog');
+    if(!frog) return;
+    frog.animate([{ transform: 'translateY(0px)' }, { transform: 'translateY(-22px)', offset: 0.45 }, { transform: 'translateY(0px)' }],
+      { duration: 650, easing: 'ease-in-out' });
+    setTimeout(function(){ ripple(POND[POND_FROG].x, POND[POND_FROG].y + 6); }, 600);
+  }
+
+  // a dragonfly darts somewhere, hovers, and darts back
+  function dragonflyDart(){
+    var flies = document.querySelectorAll('#skyCons .pond-dragonfly');
+    if(!flies.length) return;
+    var fly = flies[Math.floor(Math.random() * flies.length)];
+    var dx = ((Math.random() - 0.5) * 160).toFixed(0), dy = ((Math.random() - 0.3) * 60).toFixed(0);
+    fly.animate([
+      { transform: 'translate(0px, 0px)' },
+      { transform: 'translate(' + dx + 'px, ' + dy + 'px)', offset: 0.3 },
+      { transform: 'translate(' + dx + 'px, ' + dy + 'px)', offset: 0.6 },
+      { transform: 'translate(0px, 0px)' }
+    ], { duration: 2200, easing: 'ease-in-out' });
+  }
+
   setTimeout(skyEvent, 4000);
   skyBlock.addEventListener('keydown', function(e){
     if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); toggleSky(); }
