@@ -1578,21 +1578,10 @@
 
   // ---------- day and night colours ----------
   // The Original look's light and dark colours. Dark mode uses the dark set;
-  // "Darken at sunset" blends from light to dark as the sun goes down, and back at sunrise.
+  // "Darken at sunset" switches to it at sunset (gliding over 5 seconds) and back at sunrise.
   var LIGHT = { '--ink':'#1f2a24', '--ink-soft':'#5b6b60', '--line':'#d9d4c6', '--line-strong':'#b9b2a0', '--surface':'#ffffff', '--surface-alt':'#fbfaf6' };
   var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924' };
   var NIGHT_BG = '#20221f', NIGHT_ACCENT = '#7fb69a';
-
-  // Blend two #rrggbb colours: t = 0 gives a, t = 1 gives b.
-  function mixColour(a, b, t){
-    if(t <= 0) return a;
-    if(t >= 1) return b;
-    var pa = parseInt(a.slice(1), 16), pb = parseInt(b.slice(1), 16);
-    return '#' + [16, 8, 0].map(function(s){
-      var x = (pa >> s) & 255, y = (pb >> s) & 255;
-      return Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
-    }).join('');
-  }
 
   // Today's sunrise and sunset, in minutes after local midnight (NOAA's sun formula).
   // shortcut: always Sydney's sun; ask for the user's location if other people use the app.
@@ -1607,63 +1596,30 @@
     return { rise: 720 - 4 * (LNG + ha) - eqTime + tz, set: 720 - 4 * (LNG - ha) - eqTime + tz };
   }
 
-  // How "night" it is right now, from 0 (day) to 1 (night): fades from 30 min before
-  // sunset to an hour after, and back from an hour before sunrise to 30 min after.
-  function nightAmount(now){
+  function isNight(now){
     var sun = sunTimes(now), m = now.getHours() * 60 + now.getMinutes();
-    function ramp(from, to){ return Math.min(1, Math.max(0, (m - from) / (to - from))); }
-    return m < 720 ? 1 - ramp(sun.rise - 60, sun.rise + 30) : ramp(sun.set - 30, sun.set + 60);
+    return m < sun.rise || m >= sun.set;
   }
 
-  // WCAG contrast between two #rrggbb colours (1 = none, 21 = black on white).
-  function contrast(a, b){
-    function lum(hex){
-      var c = [1, 3, 5].map(function(i){
-        var v = parseInt(hex.substr(i, 2), 16) / 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-      });
-      return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
-    }
-    var x = lum(a), y = lum(b);
-    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-  }
-
-  // Nudge a text colour towards black or white just until it reaches the target contrast.
-  function readable(base, extreme, bg, target){
-    for(var s = 0; s <= 1; s += 0.05){
-      var c = mixColour(base, extreme, s);
-      if(contrast(c, bg) >= target) return c;
-    }
-    return extreme;
-  }
-
-  var lastNightText = null, textFlipTimer = null;
+  var wasNight = null, sunSwitchTimer = null;
   function applyColours(){
     var root = document.documentElement.style;
-    var t = settings.followSun ? nightAmount(new Date()) : (settings.dark ? 1 : 0);
-    // Backgrounds fade smoothly. Text can't simply fade with them (both would meet in an
-    // unreadable middle grey), so it uses whichever of the day or night colours reads better
-    // on the background right now, nudged towards black or white when it needs to.
-    var paper = settings.followSun ? mixColour(settings.bg, NIGHT_BG, t) : settings.bg;
-    var nightText = contrast('#ffffff', paper) > contrast('#000000', paper);
-    if(settings.followSun && lastNightText !== null && nightText !== lastNightText){
-      // the text is switching between dark and light: cross-fade it over 2 seconds instead of snapping
-      document.body.classList.add('text-flip');
-      clearTimeout(textFlipTimer);
-      textFlipTimer = setTimeout(function(){ document.body.classList.remove('text-flip'); }, 2500);
+    var night = settings.followSun ? isNight(new Date()) : !!settings.dark;
+    if(settings.followSun && wasNight !== null && night !== wasNight){
+      // the sun has just set or risen while the planner is open: glide over 5 seconds
+      document.body.classList.add('sun-switch');
+      clearTimeout(sunSwitchTimer);
+      sunSwitchTimer = setTimeout(function(){ document.body.classList.remove('sun-switch'); }, 5500);
     }
-    lastNightText = nightText;
-    var extreme = nightText ? '#ffffff' : '#000000';
-    var text = nightText ? DARK : LIGHT;
-    Object.keys(LIGHT).forEach(function(k){ root.setProperty(k, mixColour(LIGHT[k], DARK[k], t)); });
-    root.setProperty('--ink', readable(text['--ink'], extreme, paper, 4.5));
-    root.setProperty('--ink-soft', readable(text['--ink-soft'], extreme, paper, 3.5));
-    var accent = settings.followSun ? mixColour(settings.accent, NIGHT_ACCENT, t) : settings.accent;
-    root.setProperty('--paper', paper);
+    wasNight = night;
+    var colours = night ? DARK : LIGHT;
+    Object.keys(colours).forEach(function(k){ root.setProperty(k, colours[k]); });
+    var accent = settings.followSun && night ? NIGHT_ACCENT : settings.accent;
+    root.setProperty('--paper', settings.followSun && night ? NIGHT_BG : settings.bg);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');
   }
-  // keep the fade moving while the planner stays open
+  // check every minute whether the sun has set or risen while the planner stays open
   setInterval(function(){ if(settings.followSun) applyColours(); }, 60000);
 
   function applySettings(){
