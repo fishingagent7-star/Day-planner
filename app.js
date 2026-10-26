@@ -2608,6 +2608,109 @@
       (consLoading ? ' Counting your days…' : '') + '</span>';
   }
 
+  // ---------- slow tree ----------
+  // Grows a little with every good day until 100, through these stages. It follows
+  // Sydney's real seasons: blossom in spring (from 20 good days), deep green in summer,
+  // orange and gold in autumn, bare in winter, and fruit in summer and autumn from 45.
+  var TREE_STAGES = [[0, 'a seedling'], [10, 'a sapling'], [30, 'a young tree'], [60, 'a full tree'], [100, 'a grand old tree']];
+  var TREE_LEAVES = {
+    spring: ['#8cc97a', '#a3d68f', '#76b866'],
+    summer: ['#4f8f57', '#5e9e62', '#3f7f4a'],
+    autumn: ['#d9823b', '#e0a83a', '#b5562f'],
+    winter: []
+  };
+  var treeTips = [], treeFruit = []; // where leaves and fruit are, for the tree's little moments
+
+  // southern hemisphere: Sep–Nov spring, Dec–Feb summer, Mar–May autumn, Jun–Aug winter
+  function treeSeason(now){
+    var m = now.getMonth();
+    return m >= 8 && m <= 10 ? 'spring' : (m === 11 || m <= 1) ? 'summer' : m <= 4 ? 'autumn' : 'winter';
+  }
+
+  // Sky and ground are made once and only recoloured, so they glide with the sun switch.
+  function drawTreeBase(evening){
+    var base = document.getElementById('treeBase');
+    if(!base.firstChild){
+      svgEl('rect', { id: 'treeDaySky', width: 1000, height: 380, fill: 'url(#treeSkyGrad)' }, base);
+      var night = svgEl('g', { id: 'treeNight' }, base);
+      svgEl('circle', { cx: 820, cy: 70, r: 34, fill: '#f6e7b0', opacity: 0.15 }, night);
+      svgEl('circle', { cx: 820, cy: 70, r: 22, fill: '#f6e7b0' }, night);
+      var seed = 5;
+      for(var i = 0; i < 24; i++){
+        seed = (seed * 16807) % 2147483647; var x = seed / 2147483647 * 1000;
+        seed = (seed * 16807) % 2147483647; var y = seed / 2147483647 * 200;
+        svgEl('circle', { cx: x.toFixed(0), cy: y.toFixed(0), r: 1.2, fill: '#dfe6ff', opacity: 0.7 }, night);
+      }
+      svgEl('path', { id: 'treeGround', d: 'M0 262 Q250 240 500 262 T1000 258 L1000 380 L0 380 Z' }, base);
+    }
+    document.getElementById('treeDaySky').setAttribute('opacity', evening ? 0 : 1);
+    document.getElementById('treeNight').setAttribute('opacity', evening ? 1 : 0);
+    document.getElementById('treeGround').setAttribute('fill', evening ? '#22301e' : '#9cc28a');
+  }
+
+  // Branches split in two again and again; the bigger the tree, the more times they split.
+  // A fixed seed keeps the tree the same shape every time it's drawn.
+  function drawTree(stars, pop, parent){
+    var seed = 42;
+    function rnd(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var size = 0.3 + 0.7 * Math.min(1, stars / 100);
+    var depth = Math.min(5, 1 + Math.floor(size * 5));
+    var leafR = 9 + 15 * size;
+    var season = treeSeason(new Date());
+    var tree = svgEl('g', { 'class': 'tree-whole' + (pop ? ' grew' : '') }, parent);
+    var leafSpots = []; // branch tips, plus where the outer branches split, for a fuller crown
+    treeTips = [];
+    treeFruit = [];
+    function branch(x, y, angle, len, width, d){
+      var x2 = x + Math.cos(angle) * len, y2 = y + Math.sin(angle) * len;
+      svgEl('line', { x1: x.toFixed(1), y1: y.toFixed(1), x2: x2.toFixed(1), y2: y2.toFixed(1), stroke: '#6b4a2d', 'stroke-width': width.toFixed(1), 'stroke-linecap': 'round' }, tree);
+      if(d <= 1 && depth > 1) leafSpots.push([x2, y2]);
+      if(d === 0){ treeTips.push([x2, y2]); if(depth === 1) leafSpots.push([x2, y2]); return; }
+      var spread = 0.35 + rnd() * 0.25;
+      branch(x2, y2, angle - spread, len * (0.7 + rnd() * 0.1), width * 0.68, d - 1);
+      branch(x2, y2, angle + spread, len * (0.7 + rnd() * 0.1), width * 0.68, d - 1);
+    }
+    branch(500, 262, -Math.PI / 2, 170 * size * 0.42, 4 + 16 * size, depth); // the trunk, straight up
+    var colours = TREE_LEAVES[season];
+    leafSpots.forEach(function(t, i){
+      if(colours.length) svgEl('circle', { cx: t[0].toFixed(1), cy: t[1].toFixed(1), r: (leafR * (0.8 + rnd() * 0.4)).toFixed(1), fill: colours[i % colours.length] }, tree);
+    });
+    treeTips.forEach(function(t, i){
+      if(season === 'spring' && stars >= 20 && i % 2 === 0){
+        [[-6, -4], [5, 3], [2, -8]].forEach(function(o){
+          svgEl('circle', { cx: (t[0] + o[0] * size * 1.5).toFixed(1), cy: (t[1] + o[1] * size * 1.5).toFixed(1), r: 3, fill: '#f6c1d0' }, tree);
+        });
+      }
+    });
+    if((season === 'summer' || season === 'autumn') && stars >= 45){
+      var count = Math.min(treeTips.length, Math.floor((stars - 40) / 5));
+      for(var i = 0; i < count; i++){
+        var tip = treeTips[(i * 7) % treeTips.length];
+        var f = [tip[0] + (rnd() - 0.5) * leafR, tip[1] + leafR * 0.4];
+        treeFruit.push(f);
+        svgEl('circle', { cx: f[0].toFixed(1), cy: f[1].toFixed(1), r: 4.5, fill: '#d9534f' }, tree);
+      }
+    }
+    return season;
+  }
+
+  function drawTreeScene(p, pop){
+    var g = document.getElementById('skyCons');
+    g.textContent = '';
+    drawTreeBase(wasNight === true);
+    var season = drawTree(p.stars, pop, g);
+    var stage = TREE_STAGES.filter(function(s){ return p.stars >= s[0]; }).pop();
+    var next = TREE_STAGES.find(function(s){ return s[0] > p.stars; });
+    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
+    var line = pop ? '<b>Your tree grew!</b>'
+      : '<b>Slow tree</b> · ' + p.stars + ' good day' + (p.stars === 1 ? '' : 's') + ' · ' + season.charAt(0).toUpperCase() + season.slice(1);
+    document.getElementById('nightSkyCaption').innerHTML = line +
+      '<span class="sky-hint"> · Tap to open</span>' +
+      '<span class="sky-more"><br>It’s ' + stage[1] + (next ? ', and becomes ' + next[1] + ' at ' + next[0] + ' good days' : '') +
+      '. It grows a little every day you finish ' + goal + ' of your blocks.' +
+      (consLoading ? ' Counting your days…' : '') + '</span>';
+  }
+
   function renderNightSky(){
     if(!settings.showNightSky) return;
     var bg = document.getElementById('skyBg');
@@ -2628,17 +2731,23 @@
     if(!consLoading) skyTodayGood = p.todayGood;
 
     // The pond is another look for the same good days.
-    var pond = settings.growLook === 'pond';
-    document.getElementById('nightSkyBlock').classList.toggle('pond', pond);
-    bg.style.display = pond ? 'none' : '';
-    document.getElementById('skyFx').style.display = pond ? 'none' : '';
-    document.getElementById('pondFx').style.display = pond ? '' : 'none';
-    document.getElementById('pondBase').style.display = pond ? '' : 'none';
-    document.getElementById('nightSkyBlock').classList.toggle('evening', pond && wasNight === true);
-    document.getElementById('nightSky').setAttribute('aria-label', pond
-      ? 'Your fish pond: something new arrives for each good day'
-      : 'Your night sky: one star for each good day');
-    if(pond){ drawPond(p, pop); return; }
+    // The pond and the tree are other looks for the same good days; show only the chosen one's parts.
+    var look = settings.growLook, block = document.getElementById('nightSkyBlock');
+    block.classList.toggle('pond', look === 'pond');
+    block.classList.toggle('tree', look === 'tree');
+    block.classList.toggle('evening', look !== 'sky' && wasNight === true);
+    bg.style.display = look === 'sky' ? '' : 'none';
+    document.getElementById('skyFx').style.display = look === 'sky' ? '' : 'none';
+    document.getElementById('pondBase').style.display = look === 'pond' ? '' : 'none';
+    document.getElementById('pondFx').style.display = look === 'pond' ? '' : 'none';
+    document.getElementById('treeBase').style.display = look === 'tree' ? '' : 'none';
+    document.getElementById('treeFx').style.display = look === 'tree' ? '' : 'none';
+    document.getElementById('nightSky').setAttribute('aria-label', {
+      pond: 'Your fish pond: something new arrives for each good day',
+      tree: 'Your slow tree: it grows a little each good day'
+    }[look] || 'Your night sky: one star for each good day');
+    if(look === 'pond'){ drawPond(p, pop); return; }
+    if(look === 'tree'){ drawTreeScene(p, pop); return; }
 
     // Fill the constellations in order. One finished by today's star stays in
     // the middle for today, so you get to see it complete.
@@ -2699,6 +2808,7 @@
     var open = skyBlock.classList.contains('open');
     var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
     if(settings.growLook === 'pond'){ pondEvent(open, top, bottom); return; }
+    if(settings.growLook === 'tree'){ treeEvent(); return; }
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
@@ -2820,6 +2930,74 @@
       { transform: 'translate(' + dx + 'px, ' + dy + 'px)', offset: 0.6 },
       { transform: 'translate(0px, 0px)' }
     ], { duration: 2200, easing: 'ease-in-out' });
+  }
+
+  // Tree moments: leaves drifting down (many more in autumn, none in winter), blossom petals
+  // in spring, now and then a fruit dropping, and by day a robin that perches for a while.
+  var treeFx = document.getElementById('treeFx');
+  var birdVisiting = false;
+
+  function treeEvent(){
+    if(!treeTips.length) return;
+    var season = treeSeason(new Date()), choices = [];
+    if(season !== 'winter') choices.push('leaf', 'leaf');
+    if(season === 'autumn') choices.push('leaf', 'leaf', 'leaf');
+    if(season === 'spring') choices.push('petal', 'petal');
+    if(treeFruit.length) choices.push('fruit');
+    if(!birdVisiting && wasNight !== true) choices.push('bird', 'bird');
+    if(!choices.length) return;
+    var pick = choices[Math.floor(Math.random() * choices.length)];
+    if(pick === 'leaf'){ var c = TREE_LEAVES[season]; fallingLeaf(c[Math.floor(Math.random() * c.length)]); }
+    else if(pick === 'petal') fallingLeaf('#f6c1d0');
+    else if(pick === 'fruit') fruitDrop();
+    else birdVisit();
+  }
+
+  // a leaf (or petal) drifts down from a branch, swaying and turning, to the ground
+  function fallingLeaf(colour){
+    var t = treeTips[Math.floor(Math.random() * treeTips.length)];
+    var leaf = svgEl('ellipse', { cx: t[0].toFixed(1), cy: t[1].toFixed(1), rx: 5, ry: 3, fill: colour, 'class': 'tree-falling' }, treeFx);
+    var drift = (Math.random() - 0.5) * 120, fall = 258 - t[1];
+    leaf.animate([
+      { transform: 'translate(0px, 0px) rotate(0deg)', opacity: 1 },
+      { transform: 'translate(' + (drift * 0.5 + 15).toFixed(0) + 'px, ' + (fall * 0.5).toFixed(0) + 'px) rotate(180deg)', offset: 0.5 },
+      { transform: 'translate(' + drift.toFixed(0) + 'px, ' + fall.toFixed(0) + 'px) rotate(360deg)', opacity: 0 }
+    ], { duration: 4000 + Math.random() * 2000, easing: 'ease-in' }).onfinish = function(){ leaf.remove(); };
+  }
+
+  // a fruit drops, gives a little bounce on the grass, and fades
+  function fruitDrop(){
+    var f = treeFruit[Math.floor(Math.random() * treeFruit.length)];
+    var fruit = svgEl('circle', { cx: f[0].toFixed(1), cy: f[1].toFixed(1), r: 4.5, fill: '#d9534f' }, treeFx);
+    var fall = (262 - f[1]).toFixed(0);
+    fruit.animate([
+      { transform: 'translateY(0px)', opacity: 1 },
+      { transform: 'translateY(' + fall + 'px)', offset: 0.55 },
+      { transform: 'translateY(' + (fall - 10) + 'px)', offset: 0.7 },
+      { transform: 'translateY(' + fall + 'px)', opacity: 1, offset: 0.85 },
+      { transform: 'translateY(' + fall + 'px)', opacity: 0 }
+    ], { duration: 2400, easing: 'ease-in' }).onfinish = function(){ fruit.remove(); };
+  }
+
+  // a robin flies in from one side, perches on a branch for a few seconds, and flies on
+  function birdVisit(){
+    birdVisiting = true;
+    var t = treeTips[Math.floor(Math.random() * treeTips.length)];
+    var from = Math.random() < 0.5 ? -1 : 1, d = -from; // it faces the way it flies
+    var x = t[0], y = t[1] - 6;
+    var g = svgEl('g', {}, treeFx);
+    svgEl('ellipse', { cx: x, cy: y, rx: 7, ry: 5, fill: '#5b5148' }, g);
+    svgEl('ellipse', { cx: x + d * 2, cy: y + 1, rx: 4.5, ry: 3, fill: '#e0662f' }, g);
+    svgEl('circle', { cx: x + d * 6, cy: y - 4, r: 3.6, fill: '#5b5148' }, g);
+    svgEl('circle', { cx: x + d * 7, cy: y - 5, r: 0.9, fill: '#1f2a24' }, g);
+    svgEl('path', { d: 'M' + (x + d * 9) + ' ' + (y - 4) + ' L' + (x + d * 13) + ' ' + (y - 3) + ' L' + (x + d * 9) + ' ' + (y - 2) + ' Z', fill: '#f2b33d' }, g);
+    var sx = from * 700;
+    g.animate([
+      { transform: 'translate(' + sx + 'px, -120px)', opacity: 0 },
+      { transform: 'translate(0px, 0px)', opacity: 1, offset: 0.25 },
+      { transform: 'translate(0px, 0px)', opacity: 1, offset: 0.75 },
+      { transform: 'translate(' + (-sx) + 'px, -120px)', opacity: 0 }
+    ], { duration: 8000, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); birdVisiting = false; };
   }
 
   setTimeout(skyEvent, 4000);

@@ -35,6 +35,10 @@
           <stop offset="0" stop-color="#0a1230"/>
           <stop offset="1" stop-color="#23365f"/>
         </linearGradient>
+        <linearGradient id="treeSkyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#9fd0ee"/>
+          <stop offset="1" stop-color="#e3f1f6"/>
+        </linearGradient>
         <linearGradient id="meteorGrad">
           <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
           <stop offset="1" stop-color="#fff6d8" stop-opacity="0.95"/>
@@ -47,9 +51,11 @@
       <rect width="1000" height="380" fill="url(#skyGrad)"/>
       <g id="skyBg"></g>
       <g id="pondBase"></g>
+      <g id="treeBase"></g>
       <g id="skyFx"></g>
       <g id="skyCons"></g>
       <g id="pondFx"></g>
+      <g id="treeFx"></g>
     </svg>
     <p class="night-sky-caption" id="nightSkyCaption"></p>
   </div>
@@ -141,6 +147,7 @@
         <select id="growLookSelect">
           <option value="sky">Night sky</option>
           <option value="pond">Fish pond</option>
+          <option value="tree">Slow tree</option>
         </select>
       </label>
       <label class="setting-label">A good day is

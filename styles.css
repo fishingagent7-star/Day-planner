@@ -1011,3 +1011,11 @@
   body.sun-switch #pondBase, body.sun-switch #pondBase *, body.sun-switch #skyCons{transition:fill 5s ease, stroke 5s ease, opacity 5s ease, filter 5s ease;}
   .pond-firefly{animation:pond-firefly 4s ease-in-out infinite alternate;}
   @keyframes pond-firefly{0%{transform:translate(0px, 0px);opacity:.15} 50%{opacity:1} 100%{transform:translate(10px, -8px);opacity:.3}}
+
+  /* ---------- slow tree (the third look for the growing picture) ---------- */
+  .night-sky.tree{background:#26331f;}
+  .tree-whole{transform-box:fill-box;transform-origin:50% 100%;}
+  .tree-whole.grew{animation:tree-grow 1.2s ease-out;}
+  @keyframes tree-grow{0%{transform:scale(.94)} 60%{transform:scale(1.03)} 100%{transform:scale(1)}}
+  .tree-falling{transform-box:fill-box;transform-origin:center;}
+  body.sun-switch #treeBase, body.sun-switch #treeBase *{transition:fill 5s ease, opacity 5s ease;}
