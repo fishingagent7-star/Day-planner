@@ -1606,6 +1606,9 @@
     deepspace: { bg:'#121a2e', accent:'#f2d27a', dark:true  },
     nebula:    { bg:'#1a1428', accent:'#c99ae8', dark:true  }
   };
+  // "Darken at sunset" pairs each light theme with a dark one (and back again for the toggle)
+  var NIGHT_THEME = { original:'deepspace', daybreak:'deepspace', twilight:'nebula' };
+  var DAY_THEME = { deepspace:'daybreak', nebula:'twilight' };
   var FONTS = {
     serif:   "Georgia, 'Iowan Old Style', serif",
     sans:    "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
@@ -1670,8 +1673,11 @@
     wasNight = night;
     var colours = night ? DARK : LIGHT;
     Object.keys(colours).forEach(function(k){ root.setProperty(k, colours[k]); });
-    var accent = settings.followSun && night ? NIGHT_ACCENT : settings.accent;
-    root.setProperty('--paper', settings.followSun && night ? NIGHT_BG : settings.bg);
+    // after sunset, a light theme hands over to its dark partner
+    var nightTheme = settings.followSun && night && NIGHT_THEME[settings.theme];
+    document.body.dataset.theme = nightTheme || settings.theme;
+    var accent = nightTheme ? THEMES[nightTheme].accent : settings.accent;
+    root.setProperty('--paper', nightTheme ? THEMES[nightTheme].bg : settings.bg);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');
   }
@@ -1682,7 +1688,6 @@
     applyColours();
     followSunToggle.checked = !!settings.followSun;
     document.documentElement.style.setProperty('--font-body', FONTS[settings.font] || FONTS.serif);
-    document.body.dataset.theme = settings.theme;
     themeSelect.value = settings.theme;
     bgColorInput.value = settings.bg;
     accentColorInput.value = settings.accent;
@@ -1741,7 +1746,7 @@
   });
   themeSelect.addEventListener('change', function(e){
     Object.assign(settings, THEMES[e.target.value], { theme: e.target.value });
-    if(e.target.value !== 'original') settings.followSun = false; // other themes have their own colours
+    if(THEMES[e.target.value].dark) settings.followSun = false; // a dark theme has nothing to darken
     applySettings();
     saveSettings();
   });
@@ -1767,8 +1772,9 @@
   });
 
   followSunToggle.addEventListener('change', function(e){
-    // the fade goes between the Original light and dark colours, so start from the Original look
-    if(e.target.checked) Object.assign(settings, THEMES.original, { theme: 'original' });
+    // the switch goes from a light theme to its dark partner, so a dark theme swaps to its light one
+    var day = DAY_THEME[settings.theme] || settings.theme;
+    if(e.target.checked) Object.assign(settings, THEMES[day], { theme: day }); // also undoes the Dark mode button
     settings.followSun = e.target.checked;
     applySettings();
     saveSettings();
