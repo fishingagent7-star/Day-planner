@@ -2711,6 +2711,166 @@
       (consLoading ? ' Counting your days…' : '') + '</span>';
   }
 
+  // ---------- little plant ----------
+  // Each month a new pot holds a mystery seed that grows with that month's good days and
+  // reveals what it is when it blooms (15 good days). Past months sit on greenhouse shelves,
+  // as far as they grew. The plant is picked from the month, so every device agrees, and
+  // stepping 7 through 12 plants means each month of a year gets a different one.
+  var PLANTS = [
+    { name: 'Sunflower', bloom: 'daisy', petal: '#f2c14e', centre: '#6b4a2d', leaf: '#5e9e62' },
+    { name: 'Tulip', bloom: 'cup', petal: '#e85d75', leaf: '#6fb07a' },
+    { name: 'Lavender', bloom: 'spike', petal: '#9b7fd0', leaf: '#8aa88a' },
+    { name: 'Waratah', bloom: 'daisy', petal: '#c62f3a', centre: '#e0485a', leaf: '#4f7f57' },
+    { name: 'Kangaroo paw', bloom: 'spike', petal: '#d9534f', leaf: '#6f9a5a' },
+    { name: 'Bottlebrush', bloom: 'brush', petal: '#d0313b', leaf: '#5e8a4f' },
+    { name: 'Wattle', bloom: 'puff', petal: '#f2c94c', leaf: '#7a9a6a' },
+    { name: 'Daisy', bloom: 'daisy', petal: '#fbfaf6', centre: '#f2c14e', leaf: '#6fb07a' },
+    { name: 'Cactus', bloom: 'cactus', petal: '#f08fb0', leaf: '#5f9a6a' },
+    { name: 'Rose', bloom: 'cup', petal: '#b8323e', leaf: '#4f8f57' },
+    { name: 'Poppy', bloom: 'cup', petal: '#ef6c3a', leaf: '#7aa06a' },
+    { name: 'Cornflower', bloom: 'daisy', petal: '#4f7fbf', centre: '#2f4f7f', leaf: '#7a9a8a' }
+  ];
+  var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  var PLANT_BLOOM = 15;
+  var plantTop = null, plantStage = 0; // where this month's plant reaches, for the butterfly and bee
+
+  function plantFor(year, month){ return PLANTS[((year * 12 + month) * 7) % PLANTS.length]; }
+  // seed, sprout, leaves, more leaves, bud, bloom
+  function plantStageFor(good){ return good >= PLANT_BLOOM ? 5 : good >= 11 ? 4 : good >= 7 ? 3 : good >= 3 ? 2 : good >= 1 ? 1 : 0; }
+
+  // Good days (and whether anything was planned) for each month of this year so far.
+  function plantMonths(){
+    var today = localDateStr(new Date()), months = {};
+    Object.keys(consCache).forEach(function(k){
+      var ds = k.slice(5), v = consCache[k];
+      if(ds > today || !v || v.total <= 0) return;
+      var m = +ds.slice(5, 7) - 1;
+      months[m] = months[m] || { planned: 0, good: 0 };
+      months[m].planned++;
+      if(v.done / v.total >= settings.goodDay) months[m].good++;
+    });
+    return months;
+  }
+
+  // A terracotta pot, standing on baseY, at scale s. Returns where the soil is.
+  function drawPot(cx, baseY, s, parent){
+    svgEl('path', { d: 'M' + (cx - 20 * s) + ' ' + (baseY - 28 * s) + ' L' + (cx + 20 * s) + ' ' + (baseY - 28 * s) + ' L' + (cx + 15 * s) + ' ' + baseY + ' L' + (cx - 15 * s) + ' ' + baseY + ' Z', fill: '#c2643b' }, parent);
+    svgEl('rect', { x: cx - 23 * s, y: baseY - 36 * s, width: 46 * s, height: 9 * s, rx: 2 * s, fill: '#b0532c' }, parent);
+    svgEl('ellipse', { cx: cx, cy: baseY - 35 * s, rx: 20 * s, ry: 3.5 * s, fill: '#5a3e2b' }, parent);
+    return baseY - 35 * s;
+  }
+
+  // One plant at a given stage. Returns the top of the plant.
+  function drawPlant(cx, soilY, s, plant, stage, parent){
+    var h = [0, 30, 60, 90, 110, 120][stage] * s, top = soilY - h;
+    if(stage === 0){
+      svgEl('ellipse', { cx: cx, cy: soilY - 2 * s, rx: 5 * s, ry: 3.5 * s, fill: '#8a6a3f' }, parent);
+      return soilY;
+    }
+    if(plant.bloom === 'cactus'){
+      svgEl('rect', { x: cx - 9 * s, y: top, width: 18 * s, height: h, rx: 9 * s, fill: plant.leaf }, parent);
+      if(stage >= 3){
+        svgEl('rect', { x: cx - 26 * s, y: top + h * 0.35, width: 12 * s, height: h * 0.3, rx: 6 * s, fill: plant.leaf }, parent);
+        svgEl('rect', { x: cx + 14 * s, y: top + h * 0.25, width: 12 * s, height: h * 0.3, rx: 6 * s, fill: plant.leaf }, parent);
+      }
+      if(stage === 4) svgEl('ellipse', { cx: cx, cy: top - 2 * s, rx: 4 * s, ry: 6 * s, fill: plant.petal }, parent);
+      if(stage === 5) [0, 72, 144, 216, 288].forEach(function(a){
+        var r = a * Math.PI / 180;
+        svgEl('ellipse', { cx: cx + Math.cos(r) * 7 * s, cy: top - 4 * s + Math.sin(r) * 7 * s, rx: 6 * s, ry: 4 * s, fill: plant.petal, transform: 'rotate(' + a + ' ' + (cx + Math.cos(r) * 7 * s) + ' ' + (top - 4 * s + Math.sin(r) * 7 * s) + ')' }, parent);
+      });
+      return top;
+    }
+    svgEl('line', { x1: cx, y1: soilY, x2: cx, y2: top, stroke: '#4e8b5a', 'stroke-width': 3 * s, 'stroke-linecap': 'round' }, parent);
+    var leaves = [0, 2, 2, 4, 6, 6][stage];
+    for(var i = 0; i < leaves; i++){
+      var side = i % 2 ? 1 : -1, ly = soilY - h * (0.2 + 0.6 * Math.floor(i / 2) / 3), lx = cx + side * 9 * s;
+      svgEl('ellipse', { cx: lx, cy: ly, rx: 10 * s, ry: 4.5 * s, fill: plant.leaf, transform: 'rotate(' + (side * -30) + ' ' + lx + ' ' + ly + ')' }, parent);
+    }
+    if(stage === 4) svgEl('ellipse', { cx: cx, cy: top - 4 * s, rx: 5 * s, ry: 8 * s, fill: plant.petal }, parent);
+    if(stage < 5) return top;
+    if(plant.bloom === 'daisy'){
+      for(var a = 0; a < 360; a += 30){
+        var r = a * Math.PI / 180, px = cx + Math.cos(r) * 12 * s, py = top + Math.sin(r) * 12 * s;
+        svgEl('ellipse', { cx: px, cy: py, rx: 8 * s, ry: 3.5 * s, fill: plant.petal, transform: 'rotate(' + a + ' ' + px + ' ' + py + ')' }, parent);
+      }
+      svgEl('circle', { cx: cx, cy: top, r: 7 * s, fill: plant.centre }, parent);
+    } else if(plant.bloom === 'cup'){
+      svgEl('ellipse', { cx: cx - 6 * s, cy: top - 4 * s, rx: 7 * s, ry: 12 * s, fill: plant.petal, transform: 'rotate(-15 ' + (cx - 6 * s) + ' ' + (top - 4 * s) + ')' }, parent);
+      svgEl('ellipse', { cx: cx + 6 * s, cy: top - 4 * s, rx: 7 * s, ry: 12 * s, fill: plant.petal, transform: 'rotate(15 ' + (cx + 6 * s) + ' ' + (top - 4 * s) + ')' }, parent);
+      svgEl('ellipse', { cx: cx, cy: top - 6 * s, rx: 7 * s, ry: 13 * s, fill: plant.petal, opacity: 0.85 }, parent);
+    } else if(plant.bloom === 'spike'){
+      for(var k = 0; k < 9; k++) svgEl('ellipse', { cx: cx + (k % 2 ? 3 : -3) * s, cy: top - k * 4.5 * s, rx: 3.5 * s, ry: 3 * s, fill: plant.petal }, parent);
+    } else if(plant.bloom === 'brush'){
+      for(var b = 0; b < 14; b++){
+        var by = top - b * 2.6 * s;
+        svgEl('line', { x1: cx - 9 * s, y1: by, x2: cx + 9 * s, y2: by, stroke: plant.petal, 'stroke-width': 1.6 * s }, parent);
+      }
+    } else if(plant.bloom === 'puff'){
+      [[0, 0], [-10, 6], [10, 5], [-6, -9], [7, -8], [0, -16]].forEach(function(o){
+        svgEl('circle', { cx: cx + o[0] * s, cy: top + o[1] * s, r: 5 * s, fill: plant.petal }, parent);
+      });
+    }
+    return top;
+  }
+
+  // The greenhouse: back wall, glass panes, shelves and floor, made once and recoloured.
+  function drawPlantBase(evening){
+    var base = document.getElementById('plantBase');
+    if(!base.firstChild){
+      svgEl('rect', { id: 'ghWall', width: 1000, height: 380 }, base);
+      var panes = svgEl('g', { id: 'ghPanes', fill: 'none', 'stroke-width': 3 }, base);
+      [125, 250, 375, 625, 750, 875].forEach(function(x){ svgEl('line', { x1: x, y1: 0, x2: x, y2: 320 }, panes); });
+      [80, 220].forEach(function(y){ svgEl('line', { x1: 0, y1: y, x2: 1000, y2: y }, panes); });
+      svgEl('path', { d: 'M380 320 L380 60 Q500 0 620 60 L620 320', 'stroke-width': 4 }, panes); // the window behind this month's pot
+      var moon = svgEl('g', { id: 'ghMoon' }, base);
+      svgEl('circle', { cx: 560, cy: 80, r: 14, fill: '#f6e7b0' }, moon);
+      svgEl('circle', { cx: 560, cy: 80, r: 24, fill: '#f6e7b0', opacity: 0.15 }, moon);
+      svgEl('rect', { id: 'ghFloor', y: 320, width: 1000, height: 60 }, base);
+      [[40, 330, 158], [670, 960, 158], [40, 330, 298], [670, 960, 298]].forEach(function(sh){
+        svgEl('rect', { x: sh[0], y: sh[2], width: sh[1] - sh[0], height: 7, rx: 2, fill: '#a07a52' }, base);
+      });
+    }
+    function paint(id, attr, day, night){ document.getElementById(id).setAttribute(attr, evening ? night : day); }
+    paint('ghWall', 'fill', '#e3efe6', '#1c2a2c');
+    paint('ghPanes', 'stroke', '#ffffff', '#4f6680');
+    paint('ghMoon', 'opacity', 0, 1);
+    paint('ghFloor', 'fill', '#cdb898', '#3a3328');
+  }
+
+  function drawPlantScene(pop){
+    var g = document.getElementById('skyCons');
+    g.textContent = '';
+    drawPlantBase(wasNight === true);
+    var now = new Date(), year = now.getFullYear(), month = now.getMonth();
+    var months = plantMonths();
+    // past months of this year that had anything planned, on the shelves in order
+    var slots = [[85, 158], [180, 158], [275, 158], [725, 158], [820, 158], [915, 158], [85, 298], [180, 298], [275, 298], [725, 298], [820, 298], [915, 298]];
+    var shelved = 0;
+    for(var m = 0; m < month; m++){
+      if(!months[m]) continue;
+      var slot = slots[shelved++];
+      var soil = drawPot(slot[0], slot[1], 0.8, g);
+      drawPlant(slot[0], soil, 0.8, plantFor(year, m), plantStageFor(months[m].good), g);
+      svgEl('text', { x: slot[0], y: slot[1] + 18, 'class': 'gh-label' }, g).textContent = MONTH_NAMES[m];
+    }
+    // this month's pot, centre stage
+    var good = months[month] ? months[month].good : 0, plant = plantFor(year, month);
+    plantStage = plantStageFor(good);
+    var grown = svgEl('g', { 'class': 'plant-whole' + (pop ? ' grew' : '') }, g);
+    var soilY = drawPot(500, 345, 1.7, grown);
+    plantTop = [500, drawPlant(500, soilY, 1.7, plant, plantStage, grown)];
+
+    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
+    var bloomed = plantStage === 5;
+    var line = pop ? (bloomed && good === PLANT_BLOOM ? '<b>It bloomed: a ' + plant.name + '!</b>' : '<b>Your plant grew!</b>')
+      : '<b>Little plant</b> · ' + (bloomed ? 'It’s a <b>' + plant.name + '</b>!' : 'Mystery seed') + ' · ' + good + ' good day' + (good === 1 ? '' : 's') + ' this month';
+    document.getElementById('nightSkyCaption').innerHTML = line +
+      '<span class="sky-hint"> · Tap to open</span>' +
+      '<span class="sky-more"><br>' + (bloomed ? 'In full bloom. ' : 'It blooms at ' + PLANT_BLOOM + ' good days and shows what it is. ') +
+      'At the end of the month it joins your greenhouse' + (shelved ? ' (' + shelved + ' plant' + (shelved === 1 ? '' : 's') + ' so far)' : '') +
+      '. It grows every day you finish ' + goal + ' of your blocks.' + (consLoading ? ' Counting your days…' : '') + '</span>';
+  }
+
   function renderNightSky(){
     if(!settings.showNightSky) return;
     var bg = document.getElementById('skyBg');
@@ -2735,6 +2895,7 @@
     var look = settings.growLook, block = document.getElementById('nightSkyBlock');
     block.classList.toggle('pond', look === 'pond');
     block.classList.toggle('tree', look === 'tree');
+    block.classList.toggle('plant', look === 'plant');
     block.classList.toggle('evening', look !== 'sky' && wasNight === true);
     bg.style.display = look === 'sky' ? '' : 'none';
     document.getElementById('skyFx').style.display = look === 'sky' ? '' : 'none';
@@ -2742,12 +2903,16 @@
     document.getElementById('pondFx').style.display = look === 'pond' ? '' : 'none';
     document.getElementById('treeBase').style.display = look === 'tree' ? '' : 'none';
     document.getElementById('treeFx').style.display = look === 'tree' ? '' : 'none';
+    document.getElementById('plantBase').style.display = look === 'plant' ? '' : 'none';
+    document.getElementById('plantFx').style.display = look === 'plant' ? '' : 'none';
     document.getElementById('nightSky').setAttribute('aria-label', {
       pond: 'Your fish pond: something new arrives for each good day',
-      tree: 'Your slow tree: it grows a little each good day'
+      tree: 'Your slow tree: it grows a little each good day',
+      plant: 'Your little plant: this month’s mystery seed grows with each good day, and past months sit in your greenhouse'
     }[look] || 'Your night sky: one star for each good day');
     if(look === 'pond'){ drawPond(p, pop); return; }
     if(look === 'tree'){ drawTreeScene(p, pop); return; }
+    if(look === 'plant'){ drawPlantScene(pop); return; }
 
     // Fill the constellations in order. One finished by today's star stays in
     // the middle for today, so you get to see it complete.
@@ -2809,6 +2974,7 @@
     var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
     if(settings.growLook === 'pond'){ pondEvent(open, top, bottom); return; }
     if(settings.growLook === 'tree'){ treeEvent(); return; }
+    if(settings.growLook === 'plant'){ plantEvent(); return; }
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
@@ -2998,6 +3164,55 @@
       { transform: 'translate(0px, 0px)', opacity: 1, offset: 0.75 },
       { transform: 'translate(' + (-sx) + 'px, -120px)', opacity: 0 }
     ], { duration: 8000, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); birdVisiting = false; };
+  }
+
+  // Plant moments, by day only: a bee buzzes around once there are leaves, and a butterfly
+  // visits once there's a bud or flower. One visitor at a time.
+  var plantFx = document.getElementById('plantFx');
+  var plantVisitor = false;
+
+  function plantEvent(){
+    if(plantVisitor || wasNight === true || !plantTop || plantStage < 2) return;
+    if(plantStage >= 4 && Math.random() < 0.5) butterflyVisit(); else beeBuzz();
+  }
+
+  // a butterfly drifts in, settles on the flower for a few seconds, and drifts off
+  function butterflyVisit(){
+    plantVisitor = true;
+    var from = Math.random() < 0.5 ? -1 : 1, x = plantTop[0], y = plantTop[1] - 14;
+    var g = svgEl('g', {}, plantFx);
+    var wings = svgEl('g', { 'class': 'butterfly-wings' }, g);
+    svgEl('ellipse', { cx: x - 7, cy: y - 4, rx: 7, ry: 9, fill: '#f2a65a', transform: 'rotate(-20 ' + (x - 7) + ' ' + (y - 4) + ')' }, wings);
+    svgEl('ellipse', { cx: x + 7, cy: y - 4, rx: 7, ry: 9, fill: '#f2a65a', transform: 'rotate(20 ' + (x + 7) + ' ' + (y - 4) + ')' }, wings);
+    svgEl('ellipse', { cx: x - 5, cy: y + 6, rx: 4.5, ry: 5.5, fill: '#e8834a' }, wings);
+    svgEl('ellipse', { cx: x + 5, cy: y + 6, rx: 4.5, ry: 5.5, fill: '#e8834a' }, wings);
+    svgEl('line', { x1: x, y1: y - 9, x2: x, y2: y + 9, stroke: '#3a2a22', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, g);
+    var sx = from * 650;
+    g.animate([
+      { transform: 'translate(' + sx + 'px, -140px)', opacity: 0 },
+      { transform: 'translate(' + (sx * 0.4) + 'px, -60px)', opacity: 1, offset: 0.15 },
+      { transform: 'translate(0px, 0px)', offset: 0.3 },
+      { transform: 'translate(0px, 0px)', offset: 0.7 },
+      { transform: 'translate(' + (-sx * 0.4) + 'px, -80px)', opacity: 1, offset: 0.85 },
+      { transform: 'translate(' + (-sx) + 'px, -160px)', opacity: 0 }
+    ], { duration: 9000, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); plantVisitor = false; };
+  }
+
+  // a bee zips in, loops around the plant twice, and zips off
+  function beeBuzz(){
+    plantVisitor = true;
+    var cx = plantTop[0], cy = plantTop[1] + 30, g = svgEl('g', {}, plantFx);
+    svgEl('ellipse', { cx: cx, cy: cy, rx: 7, ry: 5, fill: '#f2c14e' }, g);
+    svgEl('line', { x1: cx - 2, y1: cy - 5, x2: cx - 2, y2: cy + 5, stroke: '#3a2a22', 'stroke-width': 2 }, g);
+    svgEl('line', { x1: cx + 2.5, y1: cy - 5, x2: cx + 2.5, y2: cy + 5, stroke: '#3a2a22', 'stroke-width': 2 }, g);
+    svgEl('ellipse', { cx: cx - 1, cy: cy - 7, rx: 4, ry: 3, fill: '#eef8fb', opacity: 0.8 }, g);
+    var frames = [{ transform: 'translate(-600px, -40px)', opacity: 0 }];
+    for(var i = 0; i <= 16; i++){
+      var a = i / 8 * Math.PI * 2;
+      frames.push({ transform: 'translate(' + (Math.cos(a) * 55).toFixed(0) + 'px, ' + (Math.sin(a) * 22).toFixed(0) + 'px)', opacity: 1 });
+    }
+    frames.push({ transform: 'translate(600px, -60px)', opacity: 0 });
+    g.animate(frames, { duration: 7000, easing: 'linear' }).onfinish = function(){ g.remove(); plantVisitor = false; };
   }
 
   setTimeout(skyEvent, 4000);

@@ -1019,3 +1019,13 @@
   @keyframes tree-grow{0%{transform:scale(.94)} 60%{transform:scale(1.03)} 100%{transform:scale(1)}}
   .tree-falling{transform-box:fill-box;transform-origin:center;}
   body.sun-switch #treeBase, body.sun-switch #treeBase *{transition:fill 5s ease, opacity 5s ease;}
+
+  /* ---------- little plant and greenhouse (the fourth look) ---------- */
+  .night-sky.plant{background:#2a3327;}
+  .plant-whole{transform-box:fill-box;transform-origin:50% 100%;}
+  .plant-whole.grew{animation:tree-grow 1.2s ease-out;}
+  .gh-label{fill:#6b5a44;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:14px;text-anchor:middle;}
+  .night-sky.evening .gh-label{fill:#c9b79c;}
+  body.sun-switch #plantBase, body.sun-switch #plantBase *{transition:fill 5s ease, stroke 5s ease, opacity 5s ease;}
+  .butterfly-wings{animation:flutter .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center;}
+  @keyframes flutter{from{transform:scaleX(1)} to{transform:scaleX(.55)}}
