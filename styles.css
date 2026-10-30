@@ -1024,35 +1024,6 @@
   @keyframes sky-twinkle{0%,100%{opacity:.9} 50%{opacity:.25}}
   /* The pop and twinkle play even with "reduce motion" on: the owner asked for them, and both are small. */
 
-  /* ---------- fish pond (the other look for the growing picture) ---------- */
-  .pond-fish{animation:pond-swim 5s ease-in-out infinite alternate;transform-box:fill-box;}
-  .pond-item.fresh{animation:sky-pop .8s ease-out both;transform-box:fill-box;transform-origin:center;}
-  @keyframes pond-swim{from{transform:translateX(-7px)} to{transform:translateX(7px)}}
-
   /* "Darken at sunset": when the sun sets or rises while the planner is open, app.js adds
      this class for a moment so day and night colours glide into each other over 5 seconds. */
   body.sun-switch, body.sun-switch *{transition:background-color 5s ease, color 5s ease, border-color 5s ease;}
-  /* pond moments (ripples, jumping fish) scale and turn around their own centre */
-  .pond-ring, .pond-jumper{transform-box:fill-box;transform-origin:center;}
-
-  /* evening pond: dimmer fish and plants, fireflies; glides with the 5-second sun switch */
-  .night-sky.evening #skyCons{filter:brightness(.72) saturate(.85);}
-  body.sun-switch #pondBase, body.sun-switch #pondBase *, body.sun-switch #skyCons{transition:fill 5s ease, stroke 5s ease, opacity 5s ease, filter 5s ease;}
-  .pond-firefly{animation:pond-firefly 4s ease-in-out infinite alternate;}
-  @keyframes pond-firefly{0%{transform:translate(0px, 0px);opacity:.15} 50%{opacity:1} 100%{transform:translate(10px, -8px);opacity:.3}}
-
-  /* ---------- slow tree (the third look for the growing picture) ---------- */
-  .tree-whole{transform-box:fill-box;transform-origin:50% 100%;}
-  .tree-whole.grew{animation:tree-grow 1.2s ease-out;}
-  @keyframes tree-grow{0%{transform:scale(.94)} 60%{transform:scale(1.03)} 100%{transform:scale(1)}}
-  .tree-falling{transform-box:fill-box;transform-origin:center;}
-  body.sun-switch #treeBase, body.sun-switch #treeBase *{transition:fill 5s ease, opacity 5s ease;}
-
-  /* ---------- little plant and greenhouse (the fourth look) ---------- */
-  .plant-whole{transform-box:fill-box;transform-origin:50% 100%;}
-  .plant-whole.grew{animation:tree-grow 1.2s ease-out;}
-  .gh-label{fill:#6b5a44;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:14px;text-anchor:middle;}
-  .night-sky.evening .gh-label{fill:#c9b79c;}
-  body.sun-switch #plantBase, body.sun-switch #plantBase *{transition:fill 5s ease, stroke 5s ease, opacity 5s ease;}
-  .butterfly-wings{animation:flutter .35s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center;}
-  @keyframes flutter{from{transform:scaleX(1)} to{transform:scaleX(.55)}}

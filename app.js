@@ -1597,7 +1597,7 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, growLook:'sky', followSun:false };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, followSun:false };
   // Ready-made looks. Picking one fills in the normal settings below; the rest
   // of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
@@ -1636,7 +1636,6 @@
   var showConsistencyToggle = document.getElementById('showConsistencyToggle');
   var showNightSkyToggle = document.getElementById('showNightSkyToggle');
   var goodDaySelect = document.getElementById('goodDaySelect');
-  var growLookSelect = document.getElementById('growLookSelect');
   var followSunToggle = document.getElementById('followSunToggle');
 
   // ---------- day and night colours ----------
@@ -1682,7 +1681,6 @@
     root.setProperty('--paper', settings.followSun && night ? NIGHT_BG : settings.bg);
     root.setProperty('--accent', accent);
     root.setProperty('--accent-soft', accent + '22');
-    if(switched) renderNightSky(); // the pond turns to evening (or morning) with everything else
   }
   // check every minute whether the sun has set or risen while the planner stays open
   setInterval(function(){ if(settings.followSun) applyColours(); }, 60000);
@@ -1707,7 +1705,6 @@
     document.getElementById('consistencyBlock').style.display = settings.showConsistency ? 'block' : 'none';
     showNightSkyToggle.checked = !!settings.showNightSky;
     goodDaySelect.value = String(settings.goodDay);
-    growLookSelect.value = settings.growLook;
     document.getElementById('nightSkyBlock').style.display = settings.showNightSky ? 'block' : 'none';
     if(settings.showConsistency || settings.showNightSky){ // both are drawn from the same day-by-day history
       if(!consLoaded){ loadConsistencyCache(); } else { renderConsistency(); }
@@ -1784,12 +1781,6 @@
 
   showNightSkyToggle.addEventListener('change', function(e){
     settings.showNightSky = e.target.checked;
-    applySettings();
-    saveSettings();
-  });
-
-  growLookSelect.addEventListener('change', function(e){
-    settings.growLook = e.target.value;
     applySettings();
     saveSettings();
   });
@@ -2575,398 +2566,6 @@
     });
   }
 
-  // ---------- fish pond ----------
-  // Each good day brings the next arrival, in this order. Unlike the sky the
-  // pond never restarts: once everything has arrived, another golden fish
-  // visits every 10 good days. Positions are in the same 1000×380 box as the sky.
-  var POND = [
-    { what:'fish', x:420, y:200, c:'#e8834a', d:-1, name:'your first fish' },
-    { what:'pad', x:300, y:150, name:'a lily pad' },
-    { what:'fish', x:560, y:240, c:'#f2a65a', d:1 },
-    { what:'reeds', x:120, y:175, name:'reeds' },
-    { what:'fish', x:650, y:170, c:'#e8834a', d:-1 },
-    { what:'pad', x:700, y:262, name:'a lily pad' },
-    { what:'flower', x:300, y:146, name:'a water lily' },
-    { what:'fish', x:350, y:250, c:'#d9643a', d:1 },
-    { what:'rocks', x:850, y:252, name:'rocks' },
-    { what:'fish', x:500, y:135, c:'#f2a65a', d:-1 },
-    { what:'reeds', x:880, y:150, name:'more reeds' },
-    { what:'frog', x:700, y:252, name:'a frog' },
-    { what:'fish', x:760, y:212, c:'#e8834a', d:1 },
-    { what:'pad', x:450, y:302, name:'a lily pad' },
-    { what:'fish', x:250, y:212, c:'#f2a65a', d:-1 },
-    { what:'dragonfly', x:600, y:80, name:'a dragonfly' },
-    { what:'fish', x:580, y:312, c:'#d9643a', d:1 },
-    { what:'flower', x:450, y:298, name:'another water lily' },
-    { what:'fish', x:380, y:182, c:'#e8834a', d:-1 },
-    { what:'pad', x:800, y:172, name:'a lily pad' },
-    { what:'fish', x:470, y:262, c:'#f2a65a', d:1 },
-    { what:'dragonfly', x:330, y:70, name:'a second dragonfly' },
-    { what:'fish', x:680, y:122, c:'#d9643a', d:-1 },
-    { what:'fish', x:530, y:200, c:'#f2c14e', d:1, name:'a rare golden fish' }
-  ];
-  var GOLDEN_SPOTS = [[300, 280, -1], [620, 150, 1], [760, 300, -1]];
-
-  function drawPondItem(it, fresh, parent){
-    var g = svgEl('g', { 'class': 'pond-item pond-' + it.what + (fresh ? ' fresh' : '') }, parent);
-    var x = it.x, y = it.y;
-    if(it.what === 'fish'){
-      g.style.animationDelay = '-' + ((x * 7) % 50) / 10 + 's'; // fish don't all swim in step
-      svgEl('ellipse', { cx: x, cy: y, rx: 16, ry: 8, fill: it.c }, g);
-      svgEl('path', { d: 'M' + (x + it.d * -14) + ' ' + y + ' L' + (x + it.d * -27) + ' ' + (y - 8) + ' L' + (x + it.d * -27) + ' ' + (y + 8) + ' Z', fill: it.c }, g);
-      svgEl('circle', { cx: x + it.d * 9, cy: y - 2, r: 1.6, fill: '#1f2a24' }, g);
-    } else if(it.what === 'pad'){
-      svgEl('path', { d: 'M' + x + ' ' + y + ' L' + (x + 29) + ' ' + (y - 4) + ' A30 16 0 1 0 ' + (x + 29) + ' ' + (y + 4) + ' Z', fill: '#5e9e62' }, g);
-    } else if(it.what === 'flower'){
-      [[0, -7], [7, -2], [4, 6], [-4, 6], [-7, -2]].forEach(function(o){
-        svgEl('circle', { cx: x + o[0], cy: y + o[1], r: 6, fill: '#f4b6c8' }, g);
-      });
-      svgEl('circle', { cx: x, cy: y, r: 3.5, fill: '#f2c14e' }, g);
-    } else if(it.what === 'reeds'){
-      [[-14, -52], [0, -66], [14, -46]].forEach(function(o){
-        svgEl('line', { x1: x + o[0] / 2, y1: y + 30, x2: x + o[0], y2: y + o[1], stroke: '#5e8a4f', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
-        svgEl('ellipse', { cx: x + o[0], cy: y + o[1] + 10, rx: 4, ry: 11, fill: '#8a5a35' }, g);
-      });
-    } else if(it.what === 'rocks'){
-      svgEl('ellipse', { cx: x - 16, cy: y + 4, rx: 22, ry: 13, fill: '#8e938c' }, g);
-      svgEl('ellipse', { cx: x + 14, cy: y + 8, rx: 16, ry: 10, fill: '#a3a8a0' }, g);
-      svgEl('ellipse', { cx: x + 2, cy: y - 6, rx: 13, ry: 9, fill: '#b5b9b1' }, g);
-    } else if(it.what === 'frog'){
-      svgEl('ellipse', { cx: x, cy: y, rx: 15, ry: 10, fill: '#6da34d' }, g);
-      [-8, 8].forEach(function(dx){
-        svgEl('circle', { cx: x + dx, cy: y - 9, r: 5, fill: '#6da34d' }, g);
-        svgEl('circle', { cx: x + dx, cy: y - 10, r: 3, fill: '#fbfaf6' }, g);
-        svgEl('circle', { cx: x + dx, cy: y - 10, r: 1.4, fill: '#1f2a24' }, g);
-      });
-    } else if(it.what === 'dragonfly'){
-      svgEl('line', { x1: x - 18, y1: y, x2: x + 14, y2: y, stroke: '#2f6f8a', 'stroke-width': 3, 'stroke-linecap': 'round' }, g);
-      [[-4, -9], [6, -9], [-4, 9], [6, 9]].forEach(function(o){
-        svgEl('ellipse', { cx: x + o[0], cy: y + o[1], rx: 5, ry: 10, fill: '#dff1f7', opacity: 0.75 }, g);
-      });
-    }
-  }
-
-  // The pond's water and banks are made once and only recoloured, so at sunset they glide
-  // to evening colours with the planner's 5-second sun switch. Evening (whenever the planner
-  // is in dark mode) also shows the moon's reflection and fireflies.
-  function drawPondBase(evening){
-    var base = document.getElementById('pondBase');
-    if(!base.firstChild){
-      svgEl('rect', { id: 'pondGrass', width: 1000, height: 380 }, base);
-      svgEl('ellipse', { id: 'pondEdge', cx: 500, cy: 205, rx: 430, ry: 160 }, base);
-      svgEl('ellipse', { id: 'pondWater', cx: 500, cy: 200, rx: 410, ry: 142 }, base);
-      svgEl('ellipse', { id: 'pondShine', cx: 520, cy: 205, rx: 60, ry: 14, fill: 'none', 'stroke-width': 2, opacity: 0.7 }, base);
-      var moon = svgEl('g', { id: 'pondMoon' }, base);
-      svgEl('ellipse', { cx: 640, cy: 182, rx: 26, ry: 9, fill: '#f6e7b0', opacity: 0.6 }, moon);
-      svgEl('line', { x1: 612, y1: 196, x2: 668, y2: 196, stroke: '#f6e7b0', 'stroke-width': 1.5, opacity: 0.4 }, moon);
-      svgEl('line', { x1: 624, y1: 205, x2: 656, y2: 205, stroke: '#f6e7b0', 'stroke-width': 1.5, opacity: 0.3 }, moon);
-      var flies = svgEl('g', { id: 'pondFireflies' }, base);
-      [[150, 120], [220, 300], [330, 90], [420, 330], [560, 60], [690, 320], [800, 110], [870, 260], [250, 200], [760, 175]].forEach(function(f, i){
-        var c = svgEl('circle', { cx: f[0], cy: f[1], r: 2.2, fill: '#f9ee9a', filter: 'url(#skyGlow)', 'class': 'pond-firefly' }, flies);
-        c.style.animationDelay = '-' + (i * 0.7).toFixed(1) + 's';
-      });
-    }
-    function paint(id, attr, day, night){ document.getElementById(id).setAttribute(attr, evening ? night : day); }
-    paint('pondGrass', 'fill', '#a9cc92', '#2b3d2c');
-    paint('pondEdge', 'fill', '#5f9cb3', '#183447');
-    paint('pondWater', 'fill', '#8fc4d5', '#24506a');
-    paint('pondShine', 'stroke', '#d8ecf2', '#9fb9c6');
-    paint('pondMoon', 'opacity', 0, 1);
-    paint('pondFireflies', 'opacity', 0, 1);
-  }
-
-  function drawPond(p, pop){
-    var g = document.getElementById('skyCons');
-    g.textContent = '';
-    drawPondBase(wasNight === true);
-
-    var arrived = Math.min(p.stars, POND.length);
-    pondArrived = arrived;
-    for(var i = 0; i < arrived; i++) drawPondItem(POND[i], pop && i === p.stars - 1, g);
-    // after everything has arrived, a golden fish visits every 10 good days
-    var extra = Math.max(0, Math.min(GOLDEN_SPOTS.length, Math.floor((p.stars - POND.length) / 10)));
-    for(var j = 0; j < extra; j++){
-      var s = GOLDEN_SPOTS[j];
-      drawPondItem({ what: 'fish', x: s[0], y: s[1], c: '#f2c14e', d: s[2] }, pop && j === extra - 1 && (p.stars - POND.length) % 10 === 0, g);
-    }
-
-    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
-    var next = POND[arrived];
-    var past = p.stars - POND.length; // good days since everything arrived
-    var newest = p.stars <= POND.length ? (POND[p.stars - 1] && (POND[p.stars - 1].name || 'another fish'))
-      : (past % 10 === 0 && past / 10 <= GOLDEN_SPOTS.length ? 'a golden fish' : null);
-    var line = pop && newest ? '<b>New: ' + newest + '!</b>'
-      : '<b>Fish pond</b> · ' + p.stars + ' good day' + (p.stars === 1 ? '' : 's');
-    var nextText = next ? ' · Next: ' + (next.name || 'another fish') : ' · A golden fish visits every 10 good days';
-    document.getElementById('nightSkyCaption').innerHTML = line + nextText +
-      '<span class="sky-hint"> · Tap to open</span>' +
-      '<span class="sky-more"><br>Something new arrives every day you finish ' + goal + ' of your blocks.' +
-      (consLoading ? ' Counting your days…' : '') + '</span>';
-  }
-
-  // ---------- slow tree ----------
-  // Grows a little with every good day until 100, through these stages. It follows
-  // Sydney's real seasons: blossom in spring (from 20 good days), deep green in summer,
-  // orange and gold in autumn, bare in winter, and fruit in summer and autumn from 45.
-  var TREE_STAGES = [[0, 'a seedling'], [10, 'a sapling'], [30, 'a young tree'], [60, 'a full tree'], [100, 'a grand old tree']];
-  var TREE_LEAVES = {
-    spring: ['#8cc97a', '#a3d68f', '#76b866'],
-    summer: ['#4f8f57', '#5e9e62', '#3f7f4a'],
-    autumn: ['#d9823b', '#e0a83a', '#b5562f'],
-    winter: []
-  };
-  var treeTips = [], treeFruit = []; // where leaves and fruit are, for the tree's little moments
-
-  // southern hemisphere: Sep–Nov spring, Dec–Feb summer, Mar–May autumn, Jun–Aug winter
-  function treeSeason(now){
-    var m = now.getMonth();
-    return m >= 8 && m <= 10 ? 'spring' : (m === 11 || m <= 1) ? 'summer' : m <= 4 ? 'autumn' : 'winter';
-  }
-
-  // Sky and ground are made once and only recoloured, so they glide with the sun switch.
-  function drawTreeBase(evening){
-    var base = document.getElementById('treeBase');
-    if(!base.firstChild){
-      svgEl('rect', { id: 'treeDaySky', width: 1000, height: 380, fill: 'url(#treeSkyGrad)' }, base);
-      var night = svgEl('g', { id: 'treeNight' }, base);
-      svgEl('circle', { cx: 820, cy: 70, r: 34, fill: '#f6e7b0', opacity: 0.15 }, night);
-      svgEl('circle', { cx: 820, cy: 70, r: 22, fill: '#f6e7b0' }, night);
-      var seed = 5;
-      for(var i = 0; i < 24; i++){
-        seed = (seed * 16807) % 2147483647; var x = seed / 2147483647 * 1000;
-        seed = (seed * 16807) % 2147483647; var y = seed / 2147483647 * 200;
-        svgEl('circle', { cx: x.toFixed(0), cy: y.toFixed(0), r: 1.2, fill: '#dfe6ff', opacity: 0.7 }, night);
-      }
-      svgEl('path', { id: 'treeGround', d: 'M0 262 Q250 240 500 262 T1000 258 L1000 380 L0 380 Z' }, base);
-    }
-    document.getElementById('treeDaySky').setAttribute('opacity', evening ? 0 : 1);
-    document.getElementById('treeNight').setAttribute('opacity', evening ? 1 : 0);
-    document.getElementById('treeGround').setAttribute('fill', evening ? '#22301e' : '#9cc28a');
-  }
-
-  // Branches split in two again and again; the bigger the tree, the more times they split.
-  // A fixed seed keeps the tree the same shape every time it's drawn.
-  function drawTree(stars, pop, parent){
-    var seed = 42;
-    function rnd(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
-    var size = 0.3 + 0.7 * Math.min(1, stars / 100);
-    var depth = Math.min(5, 1 + Math.floor(size * 5));
-    var leafR = 9 + 15 * size;
-    var season = treeSeason(new Date());
-    var tree = svgEl('g', { 'class': 'tree-whole' + (pop ? ' grew' : '') }, parent);
-    var leafSpots = []; // branch tips, plus where the outer branches split, for a fuller crown
-    treeTips = [];
-    treeFruit = [];
-    function branch(x, y, angle, len, width, d){
-      var x2 = x + Math.cos(angle) * len, y2 = y + Math.sin(angle) * len;
-      svgEl('line', { x1: x.toFixed(1), y1: y.toFixed(1), x2: x2.toFixed(1), y2: y2.toFixed(1), stroke: '#6b4a2d', 'stroke-width': width.toFixed(1), 'stroke-linecap': 'round' }, tree);
-      if(d <= 1 && depth > 1) leafSpots.push([x2, y2]);
-      if(d === 0){ treeTips.push([x2, y2]); if(depth === 1) leafSpots.push([x2, y2]); return; }
-      var spread = 0.35 + rnd() * 0.25;
-      branch(x2, y2, angle - spread, len * (0.7 + rnd() * 0.1), width * 0.68, d - 1);
-      branch(x2, y2, angle + spread, len * (0.7 + rnd() * 0.1), width * 0.68, d - 1);
-    }
-    branch(500, 262, -Math.PI / 2, 170 * size * 0.42, 4 + 16 * size, depth); // the trunk, straight up
-    var colours = TREE_LEAVES[season];
-    leafSpots.forEach(function(t, i){
-      if(colours.length) svgEl('circle', { cx: t[0].toFixed(1), cy: t[1].toFixed(1), r: (leafR * (0.8 + rnd() * 0.4)).toFixed(1), fill: colours[i % colours.length] }, tree);
-    });
-    treeTips.forEach(function(t, i){
-      if(season === 'spring' && stars >= 20 && i % 2 === 0){
-        [[-6, -4], [5, 3], [2, -8]].forEach(function(o){
-          svgEl('circle', { cx: (t[0] + o[0] * size * 1.5).toFixed(1), cy: (t[1] + o[1] * size * 1.5).toFixed(1), r: 3, fill: '#f6c1d0' }, tree);
-        });
-      }
-    });
-    if((season === 'summer' || season === 'autumn') && stars >= 45){
-      var count = Math.min(treeTips.length, Math.floor((stars - 40) / 5));
-      for(var i = 0; i < count; i++){
-        var tip = treeTips[(i * 7) % treeTips.length];
-        var f = [tip[0] + (rnd() - 0.5) * leafR, tip[1] + leafR * 0.4];
-        treeFruit.push(f);
-        svgEl('circle', { cx: f[0].toFixed(1), cy: f[1].toFixed(1), r: 4.5, fill: '#d9534f' }, tree);
-      }
-    }
-    return season;
-  }
-
-  function drawTreeScene(p, pop){
-    var g = document.getElementById('skyCons');
-    g.textContent = '';
-    drawTreeBase(wasNight === true);
-    var season = drawTree(p.stars, pop, g);
-    var stage = TREE_STAGES.filter(function(s){ return p.stars >= s[0]; }).pop();
-    var next = TREE_STAGES.find(function(s){ return s[0] > p.stars; });
-    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
-    var line = pop ? '<b>Your tree grew!</b>'
-      : '<b>Slow tree</b> · ' + p.stars + ' good day' + (p.stars === 1 ? '' : 's') + ' · ' + season.charAt(0).toUpperCase() + season.slice(1);
-    document.getElementById('nightSkyCaption').innerHTML = line +
-      '<span class="sky-hint"> · Tap to open</span>' +
-      '<span class="sky-more"><br>It’s ' + stage[1] + (next ? ', and becomes ' + next[1] + ' at ' + next[0] + ' good days' : '') +
-      '. It grows a little every day you finish ' + goal + ' of your blocks.' +
-      (consLoading ? ' Counting your days…' : '') + '</span>';
-  }
-
-  // ---------- little plant ----------
-  // Each month a new pot holds a mystery seed that grows with that month's good days and
-  // reveals what it is when it blooms (15 good days). Past months sit on greenhouse shelves,
-  // as far as they grew. The plant is picked from the month, so every device agrees, and
-  // stepping 7 through 12 plants means each month of a year gets a different one.
-  var PLANTS = [
-    { name: 'Sunflower', bloom: 'daisy', petal: '#f2c14e', centre: '#6b4a2d', leaf: '#5e9e62' },
-    { name: 'Tulip', bloom: 'cup', petal: '#e85d75', leaf: '#6fb07a' },
-    { name: 'Lavender', bloom: 'spike', petal: '#9b7fd0', leaf: '#8aa88a' },
-    { name: 'Waratah', bloom: 'daisy', petal: '#c62f3a', centre: '#e0485a', leaf: '#4f7f57' },
-    { name: 'Kangaroo paw', bloom: 'spike', petal: '#d9534f', leaf: '#6f9a5a' },
-    { name: 'Bottlebrush', bloom: 'brush', petal: '#d0313b', leaf: '#5e8a4f' },
-    { name: 'Wattle', bloom: 'puff', petal: '#f2c94c', leaf: '#7a9a6a' },
-    { name: 'Daisy', bloom: 'daisy', petal: '#fbfaf6', centre: '#f2c14e', leaf: '#6fb07a' },
-    { name: 'Cactus', bloom: 'cactus', petal: '#f08fb0', leaf: '#5f9a6a' },
-    { name: 'Rose', bloom: 'cup', petal: '#b8323e', leaf: '#4f8f57' },
-    { name: 'Poppy', bloom: 'cup', petal: '#ef6c3a', leaf: '#7aa06a' },
-    { name: 'Cornflower', bloom: 'daisy', petal: '#4f7fbf', centre: '#2f4f7f', leaf: '#7a9a8a' }
-  ];
-  var MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-  var PLANT_BLOOM = 15;
-  var plantTop = null, plantStage = 0; // where this month's plant reaches, for the butterfly and bee
-
-  function plantFor(year, month){ return PLANTS[((year * 12 + month) * 7) % PLANTS.length]; }
-  // seed, sprout, leaves, more leaves, bud, bloom
-  function plantStageFor(good){ return good >= PLANT_BLOOM ? 5 : good >= 11 ? 4 : good >= 7 ? 3 : good >= 3 ? 2 : good >= 1 ? 1 : 0; }
-
-  // Good days (and whether anything was planned) for each month of this year so far.
-  function plantMonths(){
-    var today = localDateStr(new Date()), months = {};
-    Object.keys(consCache).forEach(function(k){
-      var ds = k.slice(5), v = consCache[k];
-      if(ds > today || !v || v.total <= 0) return;
-      var m = +ds.slice(5, 7) - 1;
-      months[m] = months[m] || { planned: 0, good: 0 };
-      months[m].planned++;
-      if(v.done / v.total >= settings.goodDay) months[m].good++;
-    });
-    return months;
-  }
-
-  // A terracotta pot, standing on baseY, at scale s. Returns where the soil is.
-  function drawPot(cx, baseY, s, parent){
-    svgEl('path', { d: 'M' + (cx - 20 * s) + ' ' + (baseY - 28 * s) + ' L' + (cx + 20 * s) + ' ' + (baseY - 28 * s) + ' L' + (cx + 15 * s) + ' ' + baseY + ' L' + (cx - 15 * s) + ' ' + baseY + ' Z', fill: '#c2643b' }, parent);
-    svgEl('rect', { x: cx - 23 * s, y: baseY - 36 * s, width: 46 * s, height: 9 * s, rx: 2 * s, fill: '#b0532c' }, parent);
-    svgEl('ellipse', { cx: cx, cy: baseY - 35 * s, rx: 20 * s, ry: 3.5 * s, fill: '#5a3e2b' }, parent);
-    return baseY - 35 * s;
-  }
-
-  // One plant at a given stage. Returns the top of the plant.
-  function drawPlant(cx, soilY, s, plant, stage, parent){
-    var h = [0, 30, 60, 90, 110, 120][stage] * s, top = soilY - h;
-    if(stage === 0){
-      svgEl('ellipse', { cx: cx, cy: soilY - 2 * s, rx: 5 * s, ry: 3.5 * s, fill: '#8a6a3f' }, parent);
-      return soilY;
-    }
-    if(plant.bloom === 'cactus'){
-      svgEl('rect', { x: cx - 9 * s, y: top, width: 18 * s, height: h, rx: 9 * s, fill: plant.leaf }, parent);
-      if(stage >= 3){
-        svgEl('rect', { x: cx - 26 * s, y: top + h * 0.35, width: 12 * s, height: h * 0.3, rx: 6 * s, fill: plant.leaf }, parent);
-        svgEl('rect', { x: cx + 14 * s, y: top + h * 0.25, width: 12 * s, height: h * 0.3, rx: 6 * s, fill: plant.leaf }, parent);
-      }
-      if(stage === 4) svgEl('ellipse', { cx: cx, cy: top - 2 * s, rx: 4 * s, ry: 6 * s, fill: plant.petal }, parent);
-      if(stage === 5) [0, 72, 144, 216, 288].forEach(function(a){
-        var r = a * Math.PI / 180;
-        svgEl('ellipse', { cx: cx + Math.cos(r) * 7 * s, cy: top - 4 * s + Math.sin(r) * 7 * s, rx: 6 * s, ry: 4 * s, fill: plant.petal, transform: 'rotate(' + a + ' ' + (cx + Math.cos(r) * 7 * s) + ' ' + (top - 4 * s + Math.sin(r) * 7 * s) + ')' }, parent);
-      });
-      return top;
-    }
-    svgEl('line', { x1: cx, y1: soilY, x2: cx, y2: top, stroke: '#4e8b5a', 'stroke-width': 3 * s, 'stroke-linecap': 'round' }, parent);
-    var leaves = [0, 2, 2, 4, 6, 6][stage];
-    for(var i = 0; i < leaves; i++){
-      var side = i % 2 ? 1 : -1, ly = soilY - h * (0.2 + 0.6 * Math.floor(i / 2) / 3), lx = cx + side * 9 * s;
-      svgEl('ellipse', { cx: lx, cy: ly, rx: 10 * s, ry: 4.5 * s, fill: plant.leaf, transform: 'rotate(' + (side * -30) + ' ' + lx + ' ' + ly + ')' }, parent);
-    }
-    if(stage === 4) svgEl('ellipse', { cx: cx, cy: top - 4 * s, rx: 5 * s, ry: 8 * s, fill: plant.petal }, parent);
-    if(stage < 5) return top;
-    if(plant.bloom === 'daisy'){
-      for(var a = 0; a < 360; a += 30){
-        var r = a * Math.PI / 180, px = cx + Math.cos(r) * 12 * s, py = top + Math.sin(r) * 12 * s;
-        svgEl('ellipse', { cx: px, cy: py, rx: 8 * s, ry: 3.5 * s, fill: plant.petal, transform: 'rotate(' + a + ' ' + px + ' ' + py + ')' }, parent);
-      }
-      svgEl('circle', { cx: cx, cy: top, r: 7 * s, fill: plant.centre }, parent);
-    } else if(plant.bloom === 'cup'){
-      svgEl('ellipse', { cx: cx - 6 * s, cy: top - 4 * s, rx: 7 * s, ry: 12 * s, fill: plant.petal, transform: 'rotate(-15 ' + (cx - 6 * s) + ' ' + (top - 4 * s) + ')' }, parent);
-      svgEl('ellipse', { cx: cx + 6 * s, cy: top - 4 * s, rx: 7 * s, ry: 12 * s, fill: plant.petal, transform: 'rotate(15 ' + (cx + 6 * s) + ' ' + (top - 4 * s) + ')' }, parent);
-      svgEl('ellipse', { cx: cx, cy: top - 6 * s, rx: 7 * s, ry: 13 * s, fill: plant.petal, opacity: 0.85 }, parent);
-    } else if(plant.bloom === 'spike'){
-      for(var k = 0; k < 9; k++) svgEl('ellipse', { cx: cx + (k % 2 ? 3 : -3) * s, cy: top - k * 4.5 * s, rx: 3.5 * s, ry: 3 * s, fill: plant.petal }, parent);
-    } else if(plant.bloom === 'brush'){
-      for(var b = 0; b < 14; b++){
-        var by = top - b * 2.6 * s;
-        svgEl('line', { x1: cx - 9 * s, y1: by, x2: cx + 9 * s, y2: by, stroke: plant.petal, 'stroke-width': 1.6 * s }, parent);
-      }
-    } else if(plant.bloom === 'puff'){
-      [[0, 0], [-10, 6], [10, 5], [-6, -9], [7, -8], [0, -16]].forEach(function(o){
-        svgEl('circle', { cx: cx + o[0] * s, cy: top + o[1] * s, r: 5 * s, fill: plant.petal }, parent);
-      });
-    }
-    return top;
-  }
-
-  // The greenhouse: back wall, glass panes, shelves and floor, made once and recoloured.
-  function drawPlantBase(evening){
-    var base = document.getElementById('plantBase');
-    if(!base.firstChild){
-      svgEl('rect', { id: 'ghWall', width: 1000, height: 380 }, base);
-      var panes = svgEl('g', { id: 'ghPanes', fill: 'none', 'stroke-width': 3 }, base);
-      [125, 250, 375, 625, 750, 875].forEach(function(x){ svgEl('line', { x1: x, y1: 0, x2: x, y2: 320 }, panes); });
-      [80, 220].forEach(function(y){ svgEl('line', { x1: 0, y1: y, x2: 1000, y2: y }, panes); });
-      svgEl('path', { d: 'M380 320 L380 60 Q500 0 620 60 L620 320', 'stroke-width': 4 }, panes); // the window behind this month's pot
-      var moon = svgEl('g', { id: 'ghMoon' }, base);
-      svgEl('circle', { cx: 560, cy: 80, r: 14, fill: '#f6e7b0' }, moon);
-      svgEl('circle', { cx: 560, cy: 80, r: 24, fill: '#f6e7b0', opacity: 0.15 }, moon);
-      svgEl('rect', { id: 'ghFloor', y: 320, width: 1000, height: 60 }, base);
-      [[40, 330, 158], [670, 960, 158], [40, 330, 298], [670, 960, 298]].forEach(function(sh){
-        svgEl('rect', { x: sh[0], y: sh[2], width: sh[1] - sh[0], height: 7, rx: 2, fill: '#a07a52' }, base);
-      });
-    }
-    function paint(id, attr, day, night){ document.getElementById(id).setAttribute(attr, evening ? night : day); }
-    paint('ghWall', 'fill', '#e3efe6', '#1c2a2c');
-    paint('ghPanes', 'stroke', '#ffffff', '#4f6680');
-    paint('ghMoon', 'opacity', 0, 1);
-    paint('ghFloor', 'fill', '#cdb898', '#3a3328');
-  }
-
-  function drawPlantScene(pop){
-    var g = document.getElementById('skyCons');
-    g.textContent = '';
-    drawPlantBase(wasNight === true);
-    var now = new Date(), year = now.getFullYear(), month = now.getMonth();
-    var months = plantMonths();
-    // past months of this year that had anything planned, on the shelves in order
-    var slots = [[85, 158], [180, 158], [275, 158], [725, 158], [820, 158], [915, 158], [85, 298], [180, 298], [275, 298], [725, 298], [820, 298], [915, 298]];
-    var shelved = 0;
-    for(var m = 0; m < month; m++){
-      if(!months[m]) continue;
-      var slot = slots[shelved++];
-      var soil = drawPot(slot[0], slot[1], 0.8, g);
-      drawPlant(slot[0], soil, 0.8, plantFor(year, m), plantStageFor(months[m].good), g);
-      svgEl('text', { x: slot[0], y: slot[1] + 18, 'class': 'gh-label' }, g).textContent = MONTH_NAMES[m];
-    }
-    // this month's pot, centre stage
-    var good = months[month] ? months[month].good : 0, plant = plantFor(year, month);
-    plantStage = plantStageFor(good);
-    var grown = svgEl('g', { 'class': 'plant-whole' + (pop ? ' grew' : '') }, g);
-    var soilY = drawPot(500, 345, 1.7, grown);
-    plantTop = [500, drawPlant(500, soilY, 1.7, plant, plantStage, grown)];
-
-    var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
-    var bloomed = plantStage === 5;
-    var line = pop ? (bloomed && good === PLANT_BLOOM ? '<b>It bloomed: a ' + plant.name + '!</b>' : '<b>Your plant grew!</b>')
-      : '<b>Little plant</b> · ' + (bloomed ? 'It’s a <b>' + plant.name + '</b>!' : 'Mystery seed') + ' · ' + good + ' good day' + (good === 1 ? '' : 's') + ' this month';
-    document.getElementById('nightSkyCaption').innerHTML = line +
-      '<span class="sky-hint"> · Tap to open</span>' +
-      '<span class="sky-more"><br>' + (bloomed ? 'In full bloom. ' : 'It blooms at ' + PLANT_BLOOM + ' good days and shows what it is. ') +
-      'At the end of the month it joins your greenhouse' + (shelved ? ' (' + shelved + ' plant' + (shelved === 1 ? '' : 's') + ' so far)' : '') +
-      '. It grows every day you finish ' + goal + ' of your blocks.' + (consLoading ? ' Counting your days…' : '') + '</span>';
-  }
-
   function renderNightSky(){
     if(!settings.showNightSky) return;
     var bg = document.getElementById('skyBg');
@@ -2985,30 +2584,6 @@
     // today has just become a good day (not while history is still loading at start-up)
     var pop = !consLoading && skyTodayGood === false && p.todayGood;
     if(!consLoading) skyTodayGood = p.todayGood;
-
-    // The pond is another look for the same good days.
-    // The pond and the tree are other looks for the same good days; show only the chosen one's parts.
-    var look = settings.growLook, block = document.getElementById('nightSkyBlock');
-    block.classList.toggle('pond', look === 'pond');
-    block.classList.toggle('tree', look === 'tree');
-    block.classList.toggle('plant', look === 'plant');
-    block.classList.toggle('evening', look !== 'sky' && wasNight === true);
-    bg.style.display = look === 'sky' ? '' : 'none';
-    document.getElementById('skyFx').style.display = look === 'sky' ? '' : 'none';
-    document.getElementById('pondBase').style.display = look === 'pond' ? '' : 'none';
-    document.getElementById('pondFx').style.display = look === 'pond' ? '' : 'none';
-    document.getElementById('treeBase').style.display = look === 'tree' ? '' : 'none';
-    document.getElementById('treeFx').style.display = look === 'tree' ? '' : 'none';
-    document.getElementById('plantBase').style.display = look === 'plant' ? '' : 'none';
-    document.getElementById('plantFx').style.display = look === 'plant' ? '' : 'none';
-    document.getElementById('nightSky').setAttribute('aria-label', {
-      pond: 'Your fish pond: something new arrives for each good day',
-      tree: 'Your slow tree: it grows a little each good day',
-      plant: 'Your little plant: this month’s mystery seed grows with each good day, and past months sit in your greenhouse'
-    }[look] || 'Your night sky: one star for each good day');
-    if(look === 'pond'){ drawPond(p, pop); return; }
-    if(look === 'tree'){ drawTreeScene(p, pop); return; }
-    if(look === 'plant'){ drawPlantScene(pop); return; }
 
     // Fill the constellations in order. One finished by today's star stays in
     // the middle for today, so you get to see it complete.
@@ -3056,9 +2631,9 @@
   }
   skyBlock.addEventListener('click', toggleSky);
 
-  // ---------- shooting stars, satellites and pond moments ----------
+  // ---------- shooting stars and satellites ----------
   // Every 7–13 seconds something small happens. In the sky: usually a quick shooting
-  // star, sometimes a slow satellite (one at a time). In the pond: see pondEvent.
+  // star, sometimes a slow satellite (one at a time).
   // Spots and directions are random, so it's different every time. Nothing runs
   // while the tab is hidden.
   var skyFx = document.getElementById('skyFx');
@@ -3068,9 +2643,6 @@
     if(!settings.showNightSky || document.hidden || !skyFx.animate) return;
     var open = skyBlock.classList.contains('open');
     var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
-    if(settings.growLook === 'pond'){ pondEvent(open, top, bottom); return; }
-    if(settings.growLook === 'tree'){ treeEvent(); return; }
-    if(settings.growLook === 'plant'){ plantEvent(); return; }
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
@@ -3099,216 +2671,6 @@
       { opacity: 0.9, offset: 0.9 },
       { transform: 'translate(' + (dx * 1200).toFixed(0) + 'px, ' + (dy * 1200).toFixed(0) + 'px)', opacity: 0 }
     ], { duration: 20000 }).onfinish = function(){ dot.remove(); satelliteCrossing = false; };
-  }
-  // Pond moments: mostly ripples and jumping fish, now and then a duck paddling across
-  // (one at a time). Once earned, the frog hops and the dragonflies dart, but only
-  // when the pond is open, since they sit outside the thin closed strip.
-  var pondFx = document.getElementById('pondFx');
-  var duckSwimming = false, pondArrived = 0;
-  var POND_FROG = POND.findIndex(function(it){ return it.what === 'frog'; });
-  var POND_DRAGONFLY = POND.findIndex(function(it){ return it.what === 'dragonfly'; });
-
-  function pondEvent(open, top, bottom){
-    var choices = ['ripple', 'ripple', 'ripple', 'jump', 'jump'];
-    if(!duckSwimming) choices.push('duck');
-    if(open && pondArrived > POND_FROG) choices.push('frog', 'frog');
-    if(open && pondArrived > POND_DRAGONFLY) choices.push('dragonfly', 'dragonfly');
-    var pick = choices[Math.floor(Math.random() * choices.length)];
-    var spot = pointInWater(top, bottom);
-    if(pick === 'ripple') ripple(spot[0], spot[1]);
-    else if(pick === 'jump') jump(spot[0], spot[1]);
-    else if(pick === 'duck') duck(top, bottom);
-    else if(pick === 'frog') frogHop();
-    else dragonflyDart();
-  }
-
-  // a random spot on the water, inside the given band
-  function pointInWater(top, bottom){
-    for(var i = 0; i < 20; i++){
-      var x = 140 + Math.random() * 720, y = top + Math.random() * (bottom - top);
-      if(Math.pow((x - 500) / 380, 2) + Math.pow((y - 200) / 125, 2) < 1) return [x, y];
-    }
-    return [500, 200];
-  }
-
-  // two rings spreading out across the water
-  function ripple(x, y){
-    [0, 350].forEach(function(lag){
-      var ring = svgEl('ellipse', { cx: x, cy: y, rx: 38, ry: 13, fill: 'none', stroke: '#eef8fb', 'stroke-width': 1.6, 'vector-effect': 'non-scaling-stroke', 'class': 'pond-ring' }, pondFx);
-      ring.animate([{ transform: 'scale(0.1)', opacity: 0.9 }, { transform: 'scale(1)', opacity: 0 }],
-        { duration: 2000, delay: lag, easing: 'ease-out', fill: 'backwards' }).onfinish = function(){ ring.remove(); };
-    });
-  }
-
-  // a fish leaps out in an arc and splashes back in
-  function jump(x, y){
-    var d = Math.random() < 0.5 ? 1 : -1;
-    var g = svgEl('g', { 'class': 'pond-jumper' }, pondFx);
-    drawPondItem({ what: 'fish', x: x, y: y, c: ['#e8834a', '#f2a65a', '#d9643a'][Math.floor(Math.random() * 3)], d: d }, false, g);
-    ripple(x, y);
-    g.animate([
-      { transform: 'translate(0px, 0px) rotate(' + (-35 * d) + 'deg)', opacity: 0 },
-      { transform: 'translate(' + (28 * d) + 'px, -36px) rotate(0deg)', opacity: 1, offset: 0.5 },
-      { transform: 'translate(' + (56 * d) + 'px, 0px) rotate(' + (35 * d) + 'deg)', opacity: 0 }
-    ], { duration: 1100, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); ripple(x + 56 * d, y); };
-  }
-
-  // a duck paddles slowly across, leaving a small wake
-  function duck(top, bottom){
-    duckSwimming = true;
-    var d = Math.random() < 0.5 ? 1 : -1, y = top + Math.random() * (bottom - top), x = d > 0 ? 170 : 830;
-    var g = svgEl('g', {}, pondFx);
-    svgEl('path', { d: 'M' + (x - d * 16) + ' ' + (y + 4) + ' L' + (x - d * 40) + ' ' + (y - 6) + ' M' + (x - d * 16) + ' ' + (y + 4) + ' L' + (x - d * 40) + ' ' + (y + 14), stroke: '#eef8fb', 'stroke-width': 1.5, opacity: 0.7, fill: 'none' }, g);
-    svgEl('ellipse', { cx: x, cy: y, rx: 18, ry: 9, fill: '#8a7560' }, g);
-    svgEl('circle', { cx: x + d * 13, cy: y - 10, r: 7, fill: '#2f6b4a' }, g);
-    svgEl('path', { d: 'M' + (x + d * 19) + ' ' + (y - 11) + ' L' + (x + d * 27) + ' ' + (y - 9) + ' L' + (x + d * 19) + ' ' + (y - 7) + ' Z', fill: '#f2b33d' }, g);
-    svgEl('circle', { cx: x + d * 15, cy: y - 12, r: 1.3, fill: '#1f2a24' }, g);
-    g.animate([
-      { transform: 'translateX(0px)', opacity: 0 },
-      { opacity: 1, offset: 0.08 },
-      { opacity: 1, offset: 0.92 },
-      { transform: 'translateX(' + (660 * d) + 'px)', opacity: 0 }
-    ], { duration: 24000 }).onfinish = function(){ g.remove(); duckSwimming = false; };
-  }
-
-  // the frog hops up and lands back on its lily pad with a ripple
-  function frogHop(){
-    var frog = document.querySelector('#skyCons .pond-frog');
-    if(!frog) return;
-    frog.animate([{ transform: 'translateY(0px)' }, { transform: 'translateY(-22px)', offset: 0.45 }, { transform: 'translateY(0px)' }],
-      { duration: 650, easing: 'ease-in-out' });
-    setTimeout(function(){ ripple(POND[POND_FROG].x, POND[POND_FROG].y + 6); }, 600);
-  }
-
-  // a dragonfly darts somewhere, hovers, and darts back
-  function dragonflyDart(){
-    var flies = document.querySelectorAll('#skyCons .pond-dragonfly');
-    if(!flies.length) return;
-    var fly = flies[Math.floor(Math.random() * flies.length)];
-    var dx = ((Math.random() - 0.5) * 160).toFixed(0), dy = ((Math.random() - 0.3) * 60).toFixed(0);
-    fly.animate([
-      { transform: 'translate(0px, 0px)' },
-      { transform: 'translate(' + dx + 'px, ' + dy + 'px)', offset: 0.3 },
-      { transform: 'translate(' + dx + 'px, ' + dy + 'px)', offset: 0.6 },
-      { transform: 'translate(0px, 0px)' }
-    ], { duration: 2200, easing: 'ease-in-out' });
-  }
-
-  // Tree moments: leaves drifting down (many more in autumn, none in winter), blossom petals
-  // in spring, now and then a fruit dropping, and by day a robin that perches for a while.
-  var treeFx = document.getElementById('treeFx');
-  var birdVisiting = false;
-
-  function treeEvent(){
-    if(!treeTips.length) return;
-    var season = treeSeason(new Date()), choices = [];
-    if(season !== 'winter') choices.push('leaf', 'leaf');
-    if(season === 'autumn') choices.push('leaf', 'leaf', 'leaf');
-    if(season === 'spring') choices.push('petal', 'petal');
-    if(treeFruit.length) choices.push('fruit');
-    if(!birdVisiting && wasNight !== true) choices.push('bird', 'bird');
-    if(!choices.length) return;
-    var pick = choices[Math.floor(Math.random() * choices.length)];
-    if(pick === 'leaf'){ var c = TREE_LEAVES[season]; fallingLeaf(c[Math.floor(Math.random() * c.length)]); }
-    else if(pick === 'petal') fallingLeaf('#f6c1d0');
-    else if(pick === 'fruit') fruitDrop();
-    else birdVisit();
-  }
-
-  // a leaf (or petal) drifts down from a branch, swaying and turning, to the ground
-  function fallingLeaf(colour){
-    var t = treeTips[Math.floor(Math.random() * treeTips.length)];
-    var leaf = svgEl('ellipse', { cx: t[0].toFixed(1), cy: t[1].toFixed(1), rx: 5, ry: 3, fill: colour, 'class': 'tree-falling' }, treeFx);
-    var drift = (Math.random() - 0.5) * 120, fall = 258 - t[1];
-    leaf.animate([
-      { transform: 'translate(0px, 0px) rotate(0deg)', opacity: 1 },
-      { transform: 'translate(' + (drift * 0.5 + 15).toFixed(0) + 'px, ' + (fall * 0.5).toFixed(0) + 'px) rotate(180deg)', offset: 0.5 },
-      { transform: 'translate(' + drift.toFixed(0) + 'px, ' + fall.toFixed(0) + 'px) rotate(360deg)', opacity: 0 }
-    ], { duration: 4000 + Math.random() * 2000, easing: 'ease-in' }).onfinish = function(){ leaf.remove(); };
-  }
-
-  // a fruit drops, gives a little bounce on the grass, and fades
-  function fruitDrop(){
-    var f = treeFruit[Math.floor(Math.random() * treeFruit.length)];
-    var fruit = svgEl('circle', { cx: f[0].toFixed(1), cy: f[1].toFixed(1), r: 4.5, fill: '#d9534f' }, treeFx);
-    var fall = (262 - f[1]).toFixed(0);
-    fruit.animate([
-      { transform: 'translateY(0px)', opacity: 1 },
-      { transform: 'translateY(' + fall + 'px)', offset: 0.55 },
-      { transform: 'translateY(' + (fall - 10) + 'px)', offset: 0.7 },
-      { transform: 'translateY(' + fall + 'px)', opacity: 1, offset: 0.85 },
-      { transform: 'translateY(' + fall + 'px)', opacity: 0 }
-    ], { duration: 2400, easing: 'ease-in' }).onfinish = function(){ fruit.remove(); };
-  }
-
-  // a robin flies in from one side, perches on a branch for a few seconds, and flies on
-  function birdVisit(){
-    birdVisiting = true;
-    var t = treeTips[Math.floor(Math.random() * treeTips.length)];
-    var from = Math.random() < 0.5 ? -1 : 1, d = -from; // it faces the way it flies
-    var x = t[0], y = t[1] - 6;
-    var g = svgEl('g', {}, treeFx);
-    svgEl('ellipse', { cx: x, cy: y, rx: 7, ry: 5, fill: '#5b5148' }, g);
-    svgEl('ellipse', { cx: x + d * 2, cy: y + 1, rx: 4.5, ry: 3, fill: '#e0662f' }, g);
-    svgEl('circle', { cx: x + d * 6, cy: y - 4, r: 3.6, fill: '#5b5148' }, g);
-    svgEl('circle', { cx: x + d * 7, cy: y - 5, r: 0.9, fill: '#1f2a24' }, g);
-    svgEl('path', { d: 'M' + (x + d * 9) + ' ' + (y - 4) + ' L' + (x + d * 13) + ' ' + (y - 3) + ' L' + (x + d * 9) + ' ' + (y - 2) + ' Z', fill: '#f2b33d' }, g);
-    var sx = from * 700;
-    g.animate([
-      { transform: 'translate(' + sx + 'px, -120px)', opacity: 0 },
-      { transform: 'translate(0px, 0px)', opacity: 1, offset: 0.25 },
-      { transform: 'translate(0px, 0px)', opacity: 1, offset: 0.75 },
-      { transform: 'translate(' + (-sx) + 'px, -120px)', opacity: 0 }
-    ], { duration: 8000, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); birdVisiting = false; };
-  }
-
-  // Plant moments, by day only: a bee buzzes around once there are leaves, and a butterfly
-  // visits once there's a bud or flower. One visitor at a time.
-  var plantFx = document.getElementById('plantFx');
-  var plantVisitor = false;
-
-  function plantEvent(){
-    if(plantVisitor || wasNight === true || !plantTop || plantStage < 2) return;
-    if(plantStage >= 4 && Math.random() < 0.5) butterflyVisit(); else beeBuzz();
-  }
-
-  // a butterfly drifts in, settles on the flower for a few seconds, and drifts off
-  function butterflyVisit(){
-    plantVisitor = true;
-    var from = Math.random() < 0.5 ? -1 : 1, x = plantTop[0], y = plantTop[1] - 14;
-    var g = svgEl('g', {}, plantFx);
-    var wings = svgEl('g', { 'class': 'butterfly-wings' }, g);
-    svgEl('ellipse', { cx: x - 7, cy: y - 4, rx: 7, ry: 9, fill: '#f2a65a', transform: 'rotate(-20 ' + (x - 7) + ' ' + (y - 4) + ')' }, wings);
-    svgEl('ellipse', { cx: x + 7, cy: y - 4, rx: 7, ry: 9, fill: '#f2a65a', transform: 'rotate(20 ' + (x + 7) + ' ' + (y - 4) + ')' }, wings);
-    svgEl('ellipse', { cx: x - 5, cy: y + 6, rx: 4.5, ry: 5.5, fill: '#e8834a' }, wings);
-    svgEl('ellipse', { cx: x + 5, cy: y + 6, rx: 4.5, ry: 5.5, fill: '#e8834a' }, wings);
-    svgEl('line', { x1: x, y1: y - 9, x2: x, y2: y + 9, stroke: '#3a2a22', 'stroke-width': 2.5, 'stroke-linecap': 'round' }, g);
-    var sx = from * 650;
-    g.animate([
-      { transform: 'translate(' + sx + 'px, -140px)', opacity: 0 },
-      { transform: 'translate(' + (sx * 0.4) + 'px, -60px)', opacity: 1, offset: 0.15 },
-      { transform: 'translate(0px, 0px)', offset: 0.3 },
-      { transform: 'translate(0px, 0px)', offset: 0.7 },
-      { transform: 'translate(' + (-sx * 0.4) + 'px, -80px)', opacity: 1, offset: 0.85 },
-      { transform: 'translate(' + (-sx) + 'px, -160px)', opacity: 0 }
-    ], { duration: 9000, easing: 'ease-in-out' }).onfinish = function(){ g.remove(); plantVisitor = false; };
-  }
-
-  // a bee zips in, loops around the plant twice, and zips off
-  function beeBuzz(){
-    plantVisitor = true;
-    var cx = plantTop[0], cy = plantTop[1] + 30, g = svgEl('g', {}, plantFx);
-    svgEl('ellipse', { cx: cx, cy: cy, rx: 7, ry: 5, fill: '#f2c14e' }, g);
-    svgEl('line', { x1: cx - 2, y1: cy - 5, x2: cx - 2, y2: cy + 5, stroke: '#3a2a22', 'stroke-width': 2 }, g);
-    svgEl('line', { x1: cx + 2.5, y1: cy - 5, x2: cx + 2.5, y2: cy + 5, stroke: '#3a2a22', 'stroke-width': 2 }, g);
-    svgEl('ellipse', { cx: cx - 1, cy: cy - 7, rx: 4, ry: 3, fill: '#eef8fb', opacity: 0.8 }, g);
-    var frames = [{ transform: 'translate(-600px, -40px)', opacity: 0 }];
-    for(var i = 0; i <= 16; i++){
-      var a = i / 8 * Math.PI * 2;
-      frames.push({ transform: 'translate(' + (Math.cos(a) * 55).toFixed(0) + 'px, ' + (Math.sin(a) * 22).toFixed(0) + 'px)', opacity: 1 });
-    }
-    frames.push({ transform: 'translate(600px, -60px)', opacity: 0 });
-    g.animate(frames, { duration: 7000, easing: 'linear' }).onfinish = function(){ g.remove(); plantVisitor = false; };
   }
 
   setTimeout(skyEvent, 4000);
