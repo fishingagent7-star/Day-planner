@@ -259,16 +259,19 @@
 
   var loadSeq = 0; // each loadDay call gets a number; only the newest one may touch the screen
 
-  // The logo screen fades out once settings (colours) and the first day are both on screen.
+  // The logo screen fades out once settings (colours) and the first day are both on screen,
+  // and it has shown for at least 2 seconds. It only exists on a fresh start: coming back
+  // to the app from the background doesn't reload the page, so it doesn't show again.
   var splashParts = {};
   function splashReady(part){
     splashParts[part] = true;
-    if(part !== 'timeout' && !(splashParts.settings && splashParts.day)) return;
+    if(part !== 'timeout' && !(splashParts.settings && splashParts.day && splashParts.shown)) return;
     var s = document.getElementById('splash');
     if(!s) return;
     s.classList.add('gone');
     setTimeout(function(){ s.remove(); }, 500);
   }
+  setTimeout(function(){ splashReady('shown'); }, Math.max(0, 2000 - performance.now())); // 2s from the page starting
   setTimeout(function(){ splashReady('timeout'); }, 10000); // never stay stuck on the logo
 
   function loadDay(){
