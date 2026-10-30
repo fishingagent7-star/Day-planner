@@ -43,20 +43,34 @@ if(!window.storage){
         }
       });
 
+      // The screen is in one of two modes: signing in (the usual) or creating an account.
+      var creating = false;
+      function setMode(c){
+        creating = c;
+        document.getElementById('signInBtn').textContent = c ? 'Create account' : 'Sign in';
+        document.getElementById('signInIntro').textContent = c ? 'Make an account with your email and a password (at least 6 characters).' : 'Sign in to see your days on any device.';
+        document.getElementById('signInSwitchText').textContent = c ? 'Already have an account?' : 'New here?';
+        document.getElementById('signInSwitch').textContent = c ? 'Sign in' : 'Create an account';
+        passwordInput.autocomplete = c ? 'new-password' : 'current-password';
+        say('');
+      }
+      document.getElementById('signInSwitch').addEventListener('click', function(){ setMode(!creating); });
+
       form.addEventListener('submit', function(e){
         e.preventDefault();
-        say('Signing in…');
-        client.auth.signInWithPassword({ email: emailInput.value.trim(), password: passwordInput.value })
-          .then(function(res){ if(res.error) say(res.error.message); });
-      });
-
-      document.getElementById('signUpBtn').addEventListener('click', function(){
-        if(!form.reportValidity()) return;
+        var email = emailInput.value.trim(), password = passwordInput.value;
+        if(!creating){
+          say('Signing in…');
+          client.auth.signInWithPassword({ email: email, password: password })
+            .then(function(res){ if(res.error) say(res.error.message); });
+          return;
+        }
         say('Creating your account…');
-        client.auth.signUp({ email: emailInput.value.trim(), password: passwordInput.value })
+        // the confirmation email links back to this page, wherever it's hosted
+        client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname } })
           .then(function(res){
             if(res.error) say(res.error.message);
-            else if(!res.data.session) say('Account created. Check your email for a confirmation link, then come back here and sign in.');
+            else if(!res.data.session){ setMode(false); say('Almost done: check your email and tap the confirmation link, then sign in here.'); }
           });
       });
 

@@ -207,14 +207,12 @@
 <div class="sign-in" id="signIn" hidden>
   <form class="sign-in-box" id="signInForm">
     <h2>Lodestar</h2>
-    <p class="sign-in-note">Sign in to see your days on any device.</p>
+    <p class="sign-in-note" id="signInIntro">Sign in to see your days on any device.</p>
     <label>Email <input type="email" id="signInEmail" autocomplete="email" required></label>
     <label>Password <input type="password" id="signInPassword" autocomplete="current-password" minlength="6" required></label>
-    <div class="sign-in-buttons">
-      <button type="submit" class="primary" id="signInBtn">Sign in</button>
-      <button type="button" id="signUpBtn">Create account</button>
-    </div>
+    <button type="submit" class="primary" id="signInBtn">Sign in</button>
     <p class="sign-in-note" id="signInMsg" role="status"></p>
+    <p class="sign-in-note"><span id="signInSwitchText">New here?</span> <button type="button" class="link-btn" id="signInSwitch">Create an account</button></p>
   </form>
 </div>
 
