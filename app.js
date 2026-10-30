@@ -1639,7 +1639,6 @@
   // "Darken at sunset" switches to it at sunset (gliding over 5 seconds) and back at sunrise.
   var LIGHT = { '--ink':'#1f2a24', '--ink-soft':'#5b6b60', '--line':'#d9d4c6', '--line-strong':'#b9b2a0', '--surface':'#ffffff', '--surface-alt':'#fbfaf6' };
   var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924' };
-  var NIGHT_BG = '#20221f', NIGHT_ACCENT = '#7fb69a';
 
   // Today's sunrise and sunset, in minutes after local midnight (NOAA's sun formula).
   // shortcut: always Sydney's sun; ask for the user's location if other people use the app.
@@ -1720,6 +1719,8 @@
         try{ settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(res.value)); }catch(e){}
         // the old numbered themes are gone; anyone still on one goes back to Original
         if(!THEMES[settings.theme]) Object.assign(settings, THEMES.original, { theme: 'original' });
+        // so is the old green-black Dark mode; it becomes Deep Space
+        if(settings.theme === 'original' && settings.dark) Object.assign(settings, THEMES.deepspace, { theme: 'deepspace' });
       }
       applySettings();
     }).catch(function(){
@@ -1757,16 +1758,10 @@
   });
 
   darkModeBtn.addEventListener('click', function(){
-    settings.dark = !settings.dark;
-    settings.theme = 'original'; // a theme's own colours would clash with plain dark/light mode
-    settings.followSun = false;  // choosing dark or light by hand switches off the sunset fade
-    if(settings.dark){
-      settings.bg = NIGHT_BG;
-      settings.accent = NIGHT_ACCENT;
-    } else {
-      settings.bg = DEFAULT_SETTINGS.bg;
-      settings.accent = DEFAULT_SETTINGS.accent;
-    }
+    // swap to the current theme's dark (or light) partner
+    var next = (settings.dark ? DAY_THEME : NIGHT_THEME)[settings.theme] || 'original';
+    Object.assign(settings, THEMES[next], { theme: next });
+    settings.followSun = false; // choosing dark or light by hand switches off the sunset fade
     applySettings();
     saveSettings();
   });
