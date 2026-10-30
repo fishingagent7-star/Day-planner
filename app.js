@@ -1829,6 +1829,8 @@
     return navigator.serviceWorker.register('sw.js').then(function(reg){ return reg.pushManager.getSubscription(); });
   }
 
+  // the helper also keeps the app's files fresh, so start it for everyone
+  if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
   if(pushOk && Notification.permission === 'granted'){
     currentSub().then(function(sub){ showReminders(!!sub); }).catch(function(){});
   }
