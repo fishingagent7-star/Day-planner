@@ -7,7 +7,7 @@
 self.addEventListener('push', function(e){
   var data = {};
   try { data = e.data ? e.data.json() : {}; } catch(err) { data = { body: e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(data.title || 'Day planner', {
+  e.waitUntil(self.registration.showNotification(data.title || 'Lodestar', {
     body: data.body || '',
     tag: data.tag // the same block won't stack up twice
   }));

@@ -1,6 +1,6 @@
-# Day planner
+# Lodestar (day planner)
 
-Personal day-planner web app: time-blocked days, week tabs, templates, recurring templates, categories, consistency grid, streak, "now" line, undo/redo, export/import backup.
+Personal day-planner web app, named Lodestar (chosen 2026-10-30; the repo and website address still say Day-planner): time-blocked days, week tabs, templates, recurring templates, categories, consistency grid, streak, "now" line, undo/redo, export/import backup.
 
 It began as one self-contained HTML file (`index.html`, originally `day-planner-v1.9.html`) running inside a Claude artifact. Plain HTML, CSS and JavaScript. No framework, no build step.
 
