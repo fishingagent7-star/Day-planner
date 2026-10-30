@@ -972,16 +972,16 @@
   .sign-in-note{margin:0;min-height:1em;font-size:13px;color:var(--ink-soft);}
 
   /* ---------- night sky (one star per good day; drawn by renderNightSky in app.js) ----------
-     Always a night palette, whatever the theme. */
-  .night-sky{margin-bottom:18px;border-radius:10px;overflow:hidden;background:#0e1630;cursor:pointer;}
+     The picture is its own rounded rectangle; the caption sits under it as plain page text. */
+  .night-sky{margin-bottom:18px;border-radius:10px;cursor:pointer;}
   .night-sky:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
-  .night-sky svg{display:block;width:100%;height:auto;}
+  .night-sky svg{display:block;width:100%;height:auto;border-radius:10px;overflow:hidden;}
   /* closed: a short slice through the middle of the sky (the svg crops itself to fit) */
   .night-sky:not(.open) svg{height:36px;}
   .night-sky:not(.open) .sky-more,
   .night-sky.open .sky-hint{display:none;}
-  .night-sky-caption{margin:0;padding:8px 14px 10px;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:13px;line-height:1.5;color:#cfd6e8;}
-  .night-sky-caption b{color:#f6e7b0;font-weight:600;}
+  .night-sky-caption{margin:0;padding:6px 2px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);}
+  .night-sky-caption b{color:var(--ink);font-weight:600;}
   .sky-bg{fill:#dfe6ff;}
   .sky-twinkle{animation:sky-twinkle 3.6s ease-in-out infinite;}
   .sky-star{fill:#f6e7b0;}
@@ -995,7 +995,6 @@
   /* The pop and twinkle play even with "reduce motion" on: the owner asked for them, and both are small. */
 
   /* ---------- fish pond (the other look for the growing picture) ---------- */
-  .night-sky.pond{background:#1f3b33;}
   .pond-fish{animation:pond-swim 5s ease-in-out infinite alternate;transform-box:fill-box;}
   .pond-item.fresh{animation:sky-pop .8s ease-out both;transform-box:fill-box;transform-origin:center;}
   @keyframes pond-swim{from{transform:translateX(-7px)} to{transform:translateX(7px)}}
@@ -1013,7 +1012,6 @@
   @keyframes pond-firefly{0%{transform:translate(0px, 0px);opacity:.15} 50%{opacity:1} 100%{transform:translate(10px, -8px);opacity:.3}}
 
   /* ---------- slow tree (the third look for the growing picture) ---------- */
-  .night-sky.tree{background:#26331f;}
   .tree-whole{transform-box:fill-box;transform-origin:50% 100%;}
   .tree-whole.grew{animation:tree-grow 1.2s ease-out;}
   @keyframes tree-grow{0%{transform:scale(.94)} 60%{transform:scale(1.03)} 100%{transform:scale(1)}}
@@ -1021,7 +1019,6 @@
   body.sun-switch #treeBase, body.sun-switch #treeBase *{transition:fill 5s ease, opacity 5s ease;}
 
   /* ---------- little plant and greenhouse (the fourth look) ---------- */
-  .night-sky.plant{background:#2a3327;}
   .plant-whole{transform-box:fill-box;transform-origin:50% 100%;}
   .plant-whole.grew{animation:tree-grow 1.2s ease-out;}
   .gh-label{fill:#6b5a44;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:14px;text-anchor:middle;}
