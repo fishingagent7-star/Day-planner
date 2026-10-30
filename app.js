@@ -2035,6 +2035,18 @@
     importFile.value = '';
   });
 
+  // Settings tabs: show the chosen tab's settings, hide the rest.
+  settingsPanel.querySelectorAll('.set-tabs button').forEach(function(tabBtn){
+    tabBtn.addEventListener('click', function(){
+      settingsPanel.querySelectorAll('.set-tabs button').forEach(function(b){
+        b.setAttribute('aria-selected', b === tabBtn ? 'true' : 'false');
+      });
+      settingsPanel.querySelectorAll('.set-tab').forEach(function(tab){
+        tab.hidden = tab.dataset.tab !== tabBtn.dataset.tab;
+      });
+    });
+  });
+
   settingsToggle.addEventListener('click', function(){
     var open = settingsPanel.style.display !== 'none';
     settingsPanel.style.display = open ? 'none' : 'block';

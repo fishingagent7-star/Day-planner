@@ -94,6 +94,13 @@
   </div>
 
   <div class="panel" id="settingsPanel" style="display:none;">
+    <div class="set-tabs" role="tablist">
+      <button type="button" role="tab" data-tab="look" aria-selected="true">Look</button>
+      <button type="button" role="tab" data-tab="show" aria-selected="false">Show</button>
+      <button type="button" role="tab" data-tab="picture" aria-selected="false">Picture</button>
+      <button type="button" role="tab" data-tab="backup" aria-selected="false">Backup</button>
+    </div>
+    <div class="set-tab" data-tab="look" role="tabpanel">
     <div class="toolbar">
       <label class="setting-label">Theme
         <select id="themeSelect">
@@ -126,15 +133,24 @@
           <option value="big">Big (Verdana)</option>
         </select>
       </label>
-      <button id="resetAppearanceBtn">Reset to default</button>
+    </div>
+    <div class="toolbar">
       <button id="darkModeBtn">Dark mode</button>
       <label class="setting-label"><input type="checkbox" id="followSunToggle"> Darken at sunset</label>
-      <button id="signOutBtn">Sign out</button>
     </div>
+    <div class="toolbar">
+      <button id="resetAppearanceBtn">Reset to default</button>
+    </div>
+    </div>
+    <div class="set-tab" data-tab="show" role="tabpanel" hidden>
     <div class="toolbar">
       <label class="setting-label"><input type="checkbox" id="showProgressToggle"> Progress bar</label>
       <label class="setting-label"><input type="checkbox" id="showMiniTimelineToggle"> Day timeline strip</label>
+      <label class="setting-label"><input type="checkbox" id="showConsistencyToggle"> Consistency grid</label>
+      <label class="setting-label"><input type="checkbox" id="quickAddToggle"> Quick add (type-to-add)</label>
     </div>
+    </div>
+    <div class="set-tab" data-tab="backup" role="tabpanel" hidden>
     <div class="toolbar">
       <button id="exportBtn">Export backup</button>
       <button id="importBtn">Import backup</button>
@@ -143,7 +159,11 @@
     </div>
     <p class="sub" id="compactStatus" style="margin:0 0 10px;"></p>
     <div class="toolbar">
-      <label class="setting-label"><input type="checkbox" id="showConsistencyToggle"> Consistency grid</label>
+      <button id="signOutBtn">Sign out</button>
+    </div>
+    </div>
+    <div class="set-tab" data-tab="picture" role="tabpanel" hidden>
+    <div class="toolbar">
       <label class="setting-label"><input type="checkbox" id="showNightSkyToggle"> Growing picture</label>
       <label class="setting-label">Picture
         <select id="growLookSelect">
@@ -160,7 +180,7 @@
           <option value="1">all my blocks done</option>
         </select>
       </label>
-      <label class="setting-label"><input type="checkbox" id="quickAddToggle"> Quick add (type-to-add)</label>
+    </div>
     </div>
   </div>
 
