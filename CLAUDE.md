@@ -23,6 +23,10 @@ All values are JSON strings. Keys:
 - `settings` — `{bg, accent, font, dark, showProgress, showMiniTimeline, showConsistency, quickAdd}`
 - `consindex` — `{"YYYY-MM-DD": [done, total]}`: summaries of days older than 14 days (the full day is deleted once summarised)
 - `lastexport` — set when a backup was exported; old-day tidying only runs after this exists
+- `pushsub:<id>` — one per device that turned reminders on: `{sub, tz, minutes}` (not in backups)
+- `remindsent:YYYY-MM-DD` — block ids already reminded today; written by the sender, older days deleted
+
+Reminders: `sw.js` shows them; `supabase/functions/send-reminders` (Supabase Edge Function, run every minute by a Cron job, JWT check off) sends them. Its secret `VAPID_PRIVATE_KEY` lives only in Supabase secrets and the git-ignored `secrets/` folder. The table needed `grant ... to service_role` for the sender to read it.
 
 API: `get(key)` returns `{key, value}` (may return null OR throw when the key is missing), `set(key, value)`, `delete(key)`, `list(prefix)` returns `{keys}`. Writes were rate-limited, so they are done one at a time.
 
