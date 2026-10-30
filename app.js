@@ -259,6 +259,18 @@
 
   var loadSeq = 0; // each loadDay call gets a number; only the newest one may touch the screen
 
+  // The logo screen fades out once settings (colours) and the first day are both on screen.
+  var splashParts = {};
+  function splashReady(part){
+    splashParts[part] = true;
+    if(part !== 'timeout' && !(splashParts.settings && splashParts.day)) return;
+    var s = document.getElementById('splash');
+    if(!s) return;
+    s.classList.add('gone');
+    setTimeout(function(){ s.remove(); }, 500);
+  }
+  setTimeout(function(){ splashReady('timeout'); }, 10000); // never stay stuck on the logo
+
   function loadDay(){
     var date = DATES[activeIndex];
     var mySeq = ++loadSeq;
@@ -272,6 +284,7 @@
       redoStack = [];
       lastSnapshot = null;
       renderDay();
+      splashReady('day');
     }
 
     safeGet(dateKey(date)).then(function(res){
@@ -1711,6 +1724,8 @@
       applySettings();
     }).catch(function(){
       applySettings();
+    }).then(function(){
+      splashReady('settings');
     });
   }
 
