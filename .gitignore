@@ -8,3 +8,6 @@ archive/
 
 # Claude's own settings for testing
 .claude/
+
+# Private keys (never upload these)
+secrets/

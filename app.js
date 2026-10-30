@@ -1794,6 +1794,72 @@
     saveSettings();
   });
 
+  // ---------- reminders (push notifications) ----------
+  // Turning reminders on gives this device a "reminder address" (a push
+  // subscription) and saves it as pushsub:<id>. Supabase reads those and
+  // sends "starts in 5 minutes", even when the planner is closed.
+  // Safe to be public; its secret partner lives only in Supabase.
+  var VAPID_PUBLIC_KEY = 'BKmSxA_KM7us5n5hMKCGJ4uBhWc48VQNcII6_m82ZR6DS2LonguENn-wh28GT3LVxSpgpIbbVE5nTOaU8qr2KKM';
+  var remindersBtn = document.getElementById('remindersBtn');
+  var remindersStatus = document.getElementById('remindersStatus');
+  var pushOk = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  var remindersOn = false;
+
+  function showReminders(on, note){
+    remindersOn = on;
+    remindersBtn.textContent = on ? 'Turn off reminders' : 'Turn on reminders';
+    remindersStatus.textContent = note || (on ? 'On for this device, 5 minutes before each block' : '');
+  }
+  // The same device always gets the same key, so turning on twice doesn't save it twice.
+  function pushKey(sub){
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(sub.endpoint)).then(function(h){
+      return 'pushsub:' + Array.from(new Uint8Array(h).slice(0, 8)).map(function(b){ return b.toString(16).padStart(2, '0'); }).join('');
+    });
+  }
+  function keyBytes(b64){
+    var s = atob(b64.replace(/-/g, '+').replace(/_/g, '/'));
+    return Uint8Array.from(s, function(c){ return c.charCodeAt(0); });
+  }
+  function currentSub(){
+    return navigator.serviceWorker.register('sw.js').then(function(reg){ return reg.pushManager.getSubscription(); });
+  }
+
+  if(pushOk && Notification.permission === 'granted'){
+    currentSub().then(function(sub){ showReminders(!!sub); }).catch(function(){});
+  }
+
+  remindersBtn.addEventListener('click', function(){
+    if(!pushOk){
+      showReminders(false, 'On iPhone, open the planner from your Home Screen, then turn reminders on there.');
+      return;
+    }
+    remindersBtn.disabled = true;
+    var job;
+    if(remindersOn){
+      // Forget the address first, so Supabase stops sending, then switch it off.
+      job = currentSub().then(function(sub){
+        if(!sub) return;
+        return pushKey(sub).then(function(k){ return window.storage.delete(k); }).then(function(){ return sub.unsubscribe(); });
+      }).then(function(){ showReminders(false); });
+    } else {
+      // Asking must happen straight away on the tap, or iPhone won't show the question.
+      job = Notification.requestPermission().then(function(answer){
+        if(answer !== 'granted') throw new Error('Notifications are blocked. Allow them for the planner in your phone’s Settings, then try again.');
+        return navigator.serviceWorker.register('sw.js');
+      }).then(function(){
+        return navigator.serviceWorker.ready;
+      }).then(function(reg){
+        return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: keyBytes(VAPID_PUBLIC_KEY) });
+      }).then(function(sub){
+        var value = JSON.stringify({ sub: sub.toJSON(), tz: Intl.DateTimeFormat().resolvedOptions().timeZone, minutes: 5 });
+        return pushKey(sub).then(function(k){ return window.storage.set(k, value); });
+      }).then(function(){ showReminders(true); });
+    }
+    job.catch(function(err){
+      showReminders(remindersOn, (err && err.message) || 'That didn’t work. Please try again.');
+    }).then(function(){ remindersBtn.disabled = false; });
+  });
+
   // ---------- quick add (type-to-add) ----------
   function parseQuickAdd(text){
     var remaining = text;
