@@ -271,7 +271,7 @@
     s.classList.add('gone');
     setTimeout(function(){ s.remove(); }, 500);
   }
-  setTimeout(function(){ splashReady('shown'); }, Math.max(0, 2000 - performance.now())); // 2s from the page starting
+  setTimeout(function(){ splashReady('shown'); }, 2000); // the logo is on screen by now, so 2s of it
   setTimeout(function(){ splashReady('timeout'); }, 10000); // never stay stuck on the logo
 
   function loadDay(){

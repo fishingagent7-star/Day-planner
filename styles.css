@@ -986,7 +986,10 @@
   /* ---------- logo screen while the app starts ---------- */
   .splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#1b2a4a;color:#ffffff;font-family:Georgia,'Iowan Old Style',serif;font-size:28px;letter-spacing:.04em;transition:opacity .45s ease;}
   .splash.gone{opacity:0;pointer-events:none;}
-  .sign-in:not([hidden]) ~ .splash{display:none;} /* the sign-in screen takes over */
+  .splash svg,.splash span{animation:splashIn .9s ease both;}
+  .splash span{animation-delay:.25s;}
+  @keyframes splashIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+  body:has(.sign-in:not([hidden])) .splash{display:none;} /* the sign-in screen takes over */
 
   /* ---------- sign-in screen (storage.js shows it until someone signs in) ---------- */
   .sign-in{position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--paper);}
