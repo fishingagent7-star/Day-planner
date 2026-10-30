@@ -891,97 +891,39 @@
 
   /* ---------- themes (Settings > Theme) ----------
      app.js puts the chosen theme on <body data-theme="...">. Colours set on
-     body here win over the plain light/dark ones app.js sets on <html>.
-     !important is only used to beat the category tint app.js puts on each block. */
+     body here win over the plain light/dark ones app.js sets on <html>. */
 
-  /* 1 · Soft Cards: each block on its own white card */
-  body[data-theme="cards"] .block{
-    background-color:var(--surface) !important;
-    border-bottom:none;
-    border-radius:16px;
-    box-shadow:0 3px 12px rgba(31,42,36,0.08);
-    margin-bottom:12px;
-  }
-  body[data-theme="cards"] .block.current{background-color:var(--accent-soft) !important;}
-
-  /* 2 · Night Forest: green-black with mint */
-  body[data-theme="night"]{
-    --ink:#edebe3; --ink-soft:#9fb3a6; --line:#34463c; --line-strong:#4a5e52;
-    --surface:#22302a; --surface-alt:#1e2b24;
-  }
-  body[data-theme="night"] .daytab.active,
-  body[data-theme="night"] button.primary{color:#16211b;}
-
-  /* 3 · Lake Blue: calm blue, rounder buttons */
-  body[data-theme="lake"]{
-    --ink:#1b2b3a; --ink-soft:#5a6b7c; --line:#d3dee8; --line-strong:#b7c6d4; --surface-alt:#f7fafc;
-  }
-  body[data-theme="lake"] button,
-  body[data-theme="lake"] .daytab{border-radius:20px;}
-
-  /* 4 · Sunrise: warm peach, pill buttons, rounded blocks */
-  body[data-theme="sunrise"]{
-    --ink:#3a2a22; --ink-soft:#7a6255; --line:#ebd8c9; --line-strong:#dcc3b0; --surface-alt:#fffaf5;
-  }
-  body[data-theme="sunrise"] button,
-  body[data-theme="sunrise"] .daytab{border-radius:22px;}
-  body[data-theme="sunrise"] .block{border-bottom:none;border-radius:20px;margin-bottom:8px;}
-  body[data-theme="sunrise"] .content input.title{font-weight:700;}
-
-  /* 5 · Clean Minimal: black and white, categories as plain words */
-  body[data-theme="minimal"]{
-    --ink:#111418; --ink-soft:#6b6f76; --line:#e4e4e1; --line-strong:#c9c9c5;
-    --surface:#fcfcfb; --surface-alt:#fcfcfb;
-  }
-  body[data-theme="minimal"] .block{background-color:transparent !important;}
-  body[data-theme="minimal"] .tag{border:none;background:none;padding:3px 4px;}
-  body[data-theme="minimal"] .tag.on{background:none !important;color:var(--ink) !important;text-decoration:underline;}
-
-  /* 6 · Colour Blocks: filled with the category colour, stripe on the left (--cat is set in app.js) */
-  body[data-theme="blocks"] .block{
-    background-color:color-mix(in srgb, var(--cat, transparent) 16%, var(--paper)) !important;
-    border-left:6px solid var(--cat, transparent);
-    border-bottom:none;
-    border-radius:10px;
-    margin-bottom:8px;
+  /* Daybreak: the sky just after dawn, navy ink and a gold "now" line */
+  body[data-theme="daybreak"]{
+    --ink:#1b2a4a; --ink-soft:#5d6a86; --line:#d8deea; --line-strong:#aab4c8;
+    --surface:#ffffff; --surface-alt:#f8f9fc; --now:#d4a72c;
   }
 
-  /* 7 · Compact List: tighter rows; spare categories and empty notes only show while editing a block */
-  body[data-theme="compact"] .block{padding-top:6px;padding-bottom:6px;}
-  body[data-theme="compact"] .block:not(:focus-within) .tag:not(.on),
-  body[data-theme="compact"] .block:not(:focus-within) .content textarea:placeholder-shown{display:none;}
-  body[data-theme="compact"] .tag-row{margin-top:2px;}
-
-  /* 8 · Notebook: ruled paper, red margin line, handwritten titles */
-  body[data-theme="notebook"]{
-    --ink:#2b4c7e; --ink-soft:#5a6f94; --line:#dce4ef; --line-strong:#b9c7dc;
-    background-image:repeating-linear-gradient(180deg, transparent 0 31px, #dce4ef 31px 32px);
+  /* Twilight: dusk lavender, a coral "now" line, rounder buttons */
+  body[data-theme="twilight"]{
+    --ink:#2b2340; --ink-soft:#6d6384; --line:#dcd3e3; --line-strong:#b5a8c4;
+    --surface:#f8f5fa; --surface-alt:#f4f0f6; --now:#e08a6c;
   }
-  body[data-theme="notebook"] .track{border-left-color:#e3a5a0;}
-  body[data-theme="notebook"] .block{background-color:transparent !important;}
-  body[data-theme="notebook"] h1,
-  body[data-theme="notebook"] .content input.title{font-family:Caveat, 'Brush Script MT', cursive;}
-  body[data-theme="notebook"] h1{font-size:34px;}
-  body[data-theme="notebook"] .content input.title{font-size:22px;}
+  body[data-theme="twilight"] button,
+  body[data-theme="twilight"] .daytab{border-radius:20px;}
 
-  /* 9 · Tackle Box: sand and lake teal, date in a teal band */
-  body[data-theme="tackle"]{
-    --ink:#1d3b3f; --ink-soft:#5e6e6b; --line:#e2d6bf; --line-strong:#cbbd9f;
-    --surface:#fbf8f1; --surface-alt:#f7f2e8;
+  /* Deep Space: the logo's night blue and gold */
+  body[data-theme="deepspace"]{
+    --ink:#e6eaf4; --ink-soft:#97a3bf; --line:#26324d; --line-strong:#46557a;
+    --surface:#1b2a4a; --surface-alt:#16223d; --now:#f2d27a;
   }
-  body[data-theme="tackle"] .heading-row{background:var(--accent);color:#f3eee3;padding:14px 16px;border-radius:10px;}
-  body[data-theme="tackle"] .heading-row .mini-btn{background:transparent;color:#f3eee3;border-color:rgba(243,238,227,0.5);}
 
-  /* 10 · Big & Bold: bigger text and buttons, stronger outlines */
-  body[data-theme="bold"]{--ink:#141414; --ink-soft:#3d3d3d; --line:#bdb8aa; --line-strong:#141414;}
-  body[data-theme="bold"] h1{font-size:30px;font-weight:700;}
-  body[data-theme="bold"] #addBtn,
-  body[data-theme="bold"] #sortBtn{font-size:15px;padding:10px 16px;border-width:2px;}
-  body[data-theme="bold"] .daytab{font-size:14px;border-width:2px;}
-  body[data-theme="bold"] .content input.title{font-size:19px;font-weight:700;}
-  body[data-theme="bold"] .time-col input{font-size:14px;color:var(--ink);}
-  body[data-theme="bold"] .tag{font-size:13px;border-width:2px;}
-  body[data-theme="bold"] .block.current{background-color:#fff0bf !important;}
+  /* Nebula: deep violet with lilac and pink, rounder buttons */
+  body[data-theme="nebula"]{
+    --ink:#efe8f7; --ink-soft:#a99cbf; --line:#2f2645; --line-strong:#54466f;
+    --surface:#271d3c; --surface-alt:#211833; --now:#ee93b8;
+  }
+  body[data-theme="nebula"] button,
+  body[data-theme="nebula"] .daytab{border-radius:20px;}
+
+  /* the dark themes' accents are light, so text sitting on the accent is dark */
+  body[data-theme="deepspace"] :is(.daytab.active, button.primary, .weekday-btn.on, .tag.on, .insert-btn){color:#141c30;}
+  body[data-theme="nebula"] :is(.daytab.active, button.primary, .weekday-btn.on, .tag.on, .insert-btn){color:#1a1428;}
 
   /* ---------- logo screen while the app starts ---------- */
   .splash{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#1b2a4a;color:#ffffff;font-family:Georgia,'Iowan Old Style',serif;font-size:28px;letter-spacing:.04em;transition:opacity .45s ease;}

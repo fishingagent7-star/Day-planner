@@ -767,7 +767,6 @@
 
       if(b.tags.length > 0){
         row.style.backgroundColor = tagColor(b.tags[0]);
-        row.style.setProperty('--cat', colorForCategory(b.tags[0])); // used by the Colour Blocks theme
       }
 
       row.addEventListener('dragstart', function(e){
@@ -1598,20 +1597,14 @@
 
   // ---------- settings ----------
   var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, followSun:false };
-  // Ready-made looks. Picking one fills in the normal settings below; the rest
-  // of each look is CSS in styles.css, switched on by <body data-theme="...">.
+  // Ready-made looks. Picking one fills in the colour settings below (the font stays
+  // whatever you chose); the rest of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
-    original: { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
-    cards:    { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
-    night:    { bg:'#16211b', accent:'#7fb894', font:'serif',   dark:true  },
-    lake:     { bg:'#f1f5f8', accent:'#2f5d8a', font:'modern',  dark:false },
-    sunrise:  { bg:'#fbf3ec', accent:'#b0532c', font:'rounded', dark:false },
-    minimal:  { bg:'#fcfcfb', accent:'#111418', font:'modern',  dark:false },
-    blocks:   { bg:'#f6f4ee', accent:'#1f2a24', font:'serif',   dark:false },
-    compact:  { bg:'#f6f4ee', accent:'#3a5a49', font:'serif',   dark:false },
-    notebook: { bg:'#fdfbf4', accent:'#2b4c7e', font:'serif',   dark:false },
-    tackle:   { bg:'#f3eee3', accent:'#1f6f78', font:'sturdy',  dark:false },
-    bold:     { bg:'#fffdf7', accent:'#3a5a49', font:'big',     dark:false }
+    original:  { bg:'#f6f4ee', accent:'#3a5a49', dark:false },
+    daybreak:  { bg:'#f3f5fa', accent:'#2c4a7c', dark:false },
+    twilight:  { bg:'#efeaf2', accent:'#6a4f96', dark:false },
+    deepspace: { bg:'#121a2e', accent:'#f2d27a', dark:true  },
+    nebula:    { bg:'#1a1428', accent:'#c99ae8', dark:true  }
   };
   var FONTS = {
     serif:   "Georgia, 'Iowan Old Style', serif",
@@ -1720,6 +1713,8 @@
     window.storage.get('settings').then(function(res){
       if(res && res.value){
         try{ settings = Object.assign({}, DEFAULT_SETTINGS, JSON.parse(res.value)); }catch(e){}
+        // the old numbered themes are gone; anyone still on one goes back to Original
+        if(!THEMES[settings.theme]) Object.assign(settings, THEMES.original, { theme: 'original' });
       }
       applySettings();
     }).catch(function(){
