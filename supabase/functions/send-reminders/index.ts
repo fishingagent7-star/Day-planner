@@ -3,7 +3,7 @@
 // reminders on (their pushsub:* rows), it reads today's plan and sends
 // "starts in 5 min" for blocks about to begin. It remembers what it sent in
 // remindsent:<day>, so nothing arrives twice.
-// Secret needed (Edge Functions → Secrets): VAPID_PRIVATE_KEY.
+// Secrets needed (Edge Functions → Secrets): VAPID_PRIVATE_KEY and CRON_SECRET.
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
 import * as webpush from "jsr:@negrel/webpush@0.5.0";
 
@@ -56,9 +56,12 @@ async function readJson(userId: string, key: string, fallback: any) {
   try { return data ? JSON.parse(data.value) : fallback; } catch { return fallback; }
 }
 
-// shortcut: anyone who finds this address can make it check early; harmless (it only
-// sends reminders that are due, once). Add a secret header check if it's ever abused.
-Deno.serve(async () => {
+// Only the cron job knows the password (secret CRON_SECRET, sent as the x-cron-secret
+// header), so nobody else who finds this address can make it run.
+Deno.serve(async (req) => {
+  const password = Deno.env.get("CRON_SECRET");
+  if (!password || req.headers.get("x-cron-secret") !== password) return new Response("Not allowed", { status: 401 });
+
   const { data: rows, error } = await db.from(TABLE).select("user_id, key, value").like("key", "pushsub:%");
   if (error) return new Response(error.message, { status: 500 });
 
