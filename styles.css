@@ -977,3 +977,23 @@
   /* "Darken at sunset": when the sun sets or rises while the planner is open, app.js adds
      this class for a moment so day and night colours glide into each other over 5 seconds. */
   body.sun-switch, body.sun-switch *{transition:background-color 5s ease, color 5s ease, border-color 5s ease;}
+
+  /* ---------- welcome tour (app.js startTour) ---------- */
+  .tour{position:fixed;inset:0;z-index:150;}
+  .tour-dim{position:absolute;inset:0;} /* catches clicks so the page can't be used mid-tour */
+  .tour.shade .tour-dim{background:rgba(10,16,34,.62);}
+  .tour-ring{position:fixed;border-radius:10px;box-shadow:0 0 0 4px #f2d27a, 0 0 0 9999px rgba(10,16,34,.62);pointer-events:none;}
+  .tour-card{position:fixed;left:50%;transform:translateX(-50%);width:min(360px, calc(100vw - 32px));box-sizing:border-box;padding:20px;border-radius:14px;background:#1b2a4a;color:#ffffff;display:flex;flex-direction:column;gap:12px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;}
+  .tour-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#c9d2ea;}
+  .tour-card h2{margin:0;font-family:Georgia, 'Iowan Old Style', serif;font-weight:400;font-size:22px;line-height:1.25;}
+  .tour-card p{margin:0;font-size:15px;line-height:1.5;color:#dfe5f3;}
+  .tour-dots{display:flex;gap:6px;}
+  .tour-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);}
+  .tour-dots span.on{background:#f2d27a;}
+  .tour-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .tour-actions span{display:flex;gap:8px;}
+  .tour-card button{min-height:44px;font:inherit;font-size:15px;border-radius:8px;cursor:pointer;}
+  .tour-skip{border:none;background:none;color:#c9d2ea;text-decoration:underline;padding:0 4px;}
+  .tour-back{border:1px solid #f2d27a;background:transparent;color:#f2d27a;padding:0 16px;}
+  .tour-next{border:none;background:#f2d27a;color:#141c30;font-weight:600;padding:0 18px;}
+  .tour-card button:focus-visible{outline:2px solid #ffffff;outline-offset:2px;}

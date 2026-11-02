@@ -269,7 +269,90 @@
     var s = document.getElementById('splash');
     if(!s) return;
     s.classList.add('gone');
-    setTimeout(function(){ s.remove(); }, 500);
+    setTimeout(function(){ s.remove(); if(!settings.tourDone) startTour(); }, 500);
+  }
+
+  // ---------- welcome tour ----------
+  // Shown once per account (settings.tourDone), after the logo screen; replay from Settings.
+  // Each step lights up one real part of the page; a step whose part is hidden is left out.
+  var TOUR = [
+    { title: 'Welcome to Lodestar', text: 'Plan your day in simple time blocks, and watch your own night sky fill with stars as you go. This takes about 30 seconds.' },
+    { el: '#addBtn', title: 'Add a block', text: 'Tap here to add something to your day: a time, a title, and how long it takes. You can also save a whole day as a template.' },
+    { el: '.block', title: 'Tick it off', text: 'Done? Tick it. Finish half of your blocks and it counts as a good day. You can change that in Settings.' },
+    { el: '#nightSkyBlock', title: 'Your night sky', text: 'Every good day lights a star. Fill all 88 constellations. Missed days never take a star away.' },
+    { el: '#moreBtn', title: 'Make it yours', text: 'This menu holds Templates, Recurring and Settings: themes, repeating days, reminders and backups.' }
+  ];
+  var tourBox = null, tourSteps = [], tourAt = 0;
+
+  function startTour(){
+    if(tourBox) return;
+    tourSteps = TOUR.filter(function(s){
+      var el = s.el && document.querySelector(s.el);
+      return !s.el || (el && el.offsetParent !== null);
+    });
+    tourBox = document.createElement('div');
+    tourBox.className = 'tour';
+    tourBox.innerHTML = '<div class="tour-dim"></div><div class="tour-ring"></div>' +
+      '<div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tourTitle">' +
+      '<div class="tour-top"><svg width="22" height="22" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 0 Q12.5 7.5 20 10 Q12.5 12.5 10 20 Q7.5 12.5 0 10 Q7.5 7.5 10 0 Z" fill="#f2d27a"/></svg><span class="tour-count"></span></div>' +
+      '<h2 id="tourTitle"></h2><p></p><div class="tour-dots" aria-hidden="true"></div>' +
+      '<div class="tour-actions"><button type="button" class="tour-skip">Skip tour</button>' +
+      '<span><button type="button" class="tour-back">Back</button><button type="button" class="tour-next"></button></span></div></div>';
+    document.body.appendChild(tourBox);
+    tourBox.querySelector('.tour-skip').addEventListener('click', endTour);
+    tourBox.querySelector('.tour-back').addEventListener('click', function(){ showTourStep(tourAt - 1); });
+    tourBox.querySelector('.tour-next').addEventListener('click', function(){
+      if(tourAt === tourSteps.length - 1) endTour(); else showTourStep(tourAt + 1);
+    });
+    document.addEventListener('keydown', tourKey);
+    window.addEventListener('resize', placeTour);
+    window.addEventListener('scroll', placeTour, true);
+    showTourStep(0);
+  }
+
+  function tourKey(e){ if(e.key === 'Escape') endTour(); }
+
+  function showTourStep(i){
+    tourAt = i;
+    var s = tourSteps[i], last = i === tourSteps.length - 1;
+    tourBox.querySelector('#tourTitle').textContent = s.title;
+    tourBox.querySelector('.tour-card p').textContent = s.text;
+    tourBox.querySelector('.tour-count').textContent = 'Step ' + (i + 1) + ' of ' + tourSteps.length;
+    tourBox.querySelector('.tour-dots').innerHTML = tourSteps.map(function(_, n){ return '<span' + (n === i ? ' class="on"' : '') + '></span>'; }).join('');
+    tourBox.querySelector('.tour-back').hidden = i === 0;
+    var next = tourBox.querySelector('.tour-next');
+    next.textContent = i === 0 ? 'Show me' : last ? 'Finish' : 'Next';
+    // bring the part near the top of the screen, leaving room for the card underneath
+    if(s.el) window.scrollBy(0, document.querySelector(s.el).getBoundingClientRect().top - 90);
+    placeTour();
+    next.focus({ preventScroll: true });
+  }
+
+  // Put the gold ring around this step's part, and the card just below it (or above, if there's no room).
+  function placeTour(){
+    if(!tourBox) return;
+    var s = tourSteps[tourAt], ring = tourBox.querySelector('.tour-ring'), card = tourBox.querySelector('.tour-card');
+    var el = s.el && document.querySelector(s.el);
+    tourBox.classList.toggle('shade', !el); // the welcome step dims the whole page
+    ring.hidden = !el;
+    if(!el){ card.style.top = Math.max(16, (window.innerHeight - card.offsetHeight) / 2) + 'px'; return; }
+    var r = el.getBoundingClientRect(), pad = 6;
+    ring.style.left = (r.left - pad) + 'px';
+    ring.style.top = (r.top - pad) + 'px';
+    ring.style.width = (r.width + pad * 2) + 'px';
+    ring.style.height = (r.height + pad * 2) + 'px';
+    var below = r.bottom + pad + 14, h = card.offsetHeight;
+    card.style.top = Math.max(16, below + h < window.innerHeight - 16 ? below : r.top - pad - 14 - h) + 'px';
+  }
+
+  function endTour(){
+    if(!tourBox) return;
+    tourBox.remove();
+    tourBox = null;
+    document.removeEventListener('keydown', tourKey);
+    window.removeEventListener('resize', placeTour);
+    window.removeEventListener('scroll', placeTour, true);
+    if(!settings.tourDone){ settings.tourDone = true; saveSettings(); }
   }
   setTimeout(function(){ splashReady('shown'); }, 2000); // the logo is on screen by now, so 2s of it
   setTimeout(function(){ splashReady('timeout'); }, 10000); // never stay stuck on the logo
@@ -2128,6 +2211,12 @@
         tab.hidden = tab.dataset.tab !== tabBtn.dataset.tab;
       });
     });
+  });
+
+  document.getElementById('replayTourBtn').addEventListener('click', function(){
+    settingsToggle.click(); // close Settings so the tour can point at the page
+    window.scrollTo(0, 0);
+    startTour();
   });
 
   settingsToggle.addEventListener('click', function(){
