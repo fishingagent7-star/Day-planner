@@ -11,3 +11,6 @@ archive/
 
 # Private keys (never upload these)
 secrets/
+
+# Drafts not ready to publish (privacy policy, terms)
+drafts/
