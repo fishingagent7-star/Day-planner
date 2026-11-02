@@ -2790,8 +2790,44 @@
     });
   }
 
+  // ---------- sky colours through the day ----------
+  // The sky follows Sydney's real sunrise and sunset (sunTimes): a pale glow at dawn,
+  // calm deep blue by day, pink and orange at sunset, full dark at night. It never gets
+  // light enough to hide the gold stars; only the faint background stars dim by day.
+  var SKY_LOOKS = {
+    night:  { top:'#0a1230', mid:'#16244a', bot:'#23365f', glow:'#23365f', glowA:0,    bg:1 },
+    dawn:   { top:'#13224f', mid:'#3b5590', bot:'#9fb2d6', glow:'#f6c9a8', glowA:0.55, bg:0.45 },
+    midday: { top:'#1f3a74', mid:'#2c4f8f', bot:'#4a6faa', glow:'#bcd2ff', glowA:0.22, bg:0.2 },
+    sunset: { top:'#141c46', mid:'#4a3a78', bot:'#c8746a', glow:'#f4a46a', glowA:0.6,  bg:0.55 }
+  };
+  function mixColour(a, b, t){
+    var x = [1, 3, 5].map(function(i){ return parseInt(a.slice(i, i + 2), 16); });
+    var y = [1, 3, 5].map(function(i){ return parseInt(b.slice(i, i + 2), 16); });
+    return 'rgb(' + x.map(function(v, i){ return Math.round(v + (y[i] - v) * t); }).join(',') + ')';
+  }
+  function tintSky(){
+    var now = new Date(), sun = sunTimes(now), m = now.getHours() * 60 + now.getMinutes();
+    // key moments in minutes after midnight; the colours blend between them
+    var keys = [[0, 'night'], [sun.rise - 60, 'night'], [sun.rise + 15, 'dawn'], [sun.rise + 150, 'midday'],
+                [sun.set - 90, 'midday'], [sun.set + 10, 'sunset'], [sun.set + 80, 'night'], [1440, 'night']];
+    var i = 0;
+    while(i < keys.length - 2 && m > keys[i + 1][0]) i++;
+    var A = SKY_LOOKS[keys[i][1]], B = SKY_LOOKS[keys[i + 1][1]];
+    var t = Math.min(1, Math.max(0, (m - keys[i][0]) / ((keys[i + 1][0] - keys[i][0]) || 1)));
+    document.getElementById('skyTop').setAttribute('stop-color', mixColour(A.top, B.top, t));
+    document.getElementById('skyMid').setAttribute('stop-color', mixColour(A.mid, B.mid, t));
+    document.getElementById('skyBot').setAttribute('stop-color', mixColour(A.bot, B.bot, t));
+    var glow = mixColour(A.glow, B.glow, t), glowA = A.glowA + (B.glowA - A.glowA) * t;
+    document.getElementById('skyGlowIn').setAttribute('stop-color', glow);
+    document.getElementById('skyGlowIn').setAttribute('stop-opacity', glowA.toFixed(2));
+    document.getElementById('skyGlowOut').setAttribute('stop-color', glow);
+    document.getElementById('skyBg').setAttribute('opacity', (A.bg + (B.bg - A.bg) * t).toFixed(2));
+  }
+  setInterval(function(){ if(settings.showNightSky) tintSky(); }, 60000);
+
   function renderNightSky(){
     if(!settings.showNightSky) return;
+    tintSky();
     var bg = document.getElementById('skyBg');
     if(!bg.firstChild){
       // fixed pseudo-random background stars, so the sky looks the same every time

@@ -43,10 +43,16 @@
   <div class="night-sky" id="nightSkyBlock" style="display:none;" role="button" tabindex="0" aria-expanded="false">
     <svg id="nightSky" viewBox="0 0 1000 380" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Your night sky: one star for each good day">
       <defs>
+        <!-- app.js (tintSky) recolours these with the time of day -->
         <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#0a1230"/>
-          <stop offset="1" stop-color="#23365f"/>
+          <stop id="skyTop" offset="0" stop-color="#0a1230"/>
+          <stop id="skyMid" offset="0.55" stop-color="#16244a"/>
+          <stop id="skyBot" offset="1" stop-color="#23365f"/>
         </linearGradient>
+        <radialGradient id="skyGlowGrad" cx="0.5" cy="1.05" r="0.75">
+          <stop id="skyGlowIn" offset="0" stop-color="#23365f" stop-opacity="0"/>
+          <stop id="skyGlowOut" offset="1" stop-color="#23365f" stop-opacity="0"/>
+        </radialGradient>
         <linearGradient id="meteorGrad">
           <stop offset="0" stop-color="#ffffff" stop-opacity="0"/>
           <stop offset="1" stop-color="#fff6d8" stop-opacity="0.95"/>
@@ -57,6 +63,7 @@
         </filter>
       </defs>
       <rect width="1000" height="380" fill="url(#skyGrad)"/>
+      <rect width="1000" height="380" fill="url(#skyGlowGrad)"/>
       <g id="skyBg"></g>
       <g id="skyFx"></g>
       <g id="skyCons"></g>
