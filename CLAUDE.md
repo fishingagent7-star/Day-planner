@@ -38,6 +38,7 @@ Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-fil
 - **Saving:** take the JSON snapshot at the moment of the edit, keyed to that day, and flush pending saves when switching days (`pendingSaves`, `flushSaves`).
 - **A failed read must not look like "empty":** templates, categories and recurring rules can only be saved once they loaded successfully (`templatesState`, `categoriesState`, `recurringState`; categories and recurring rules load through `loadProtected`, which retries and checks the key list).
 - **Missing keys:** treat as empty (`safeGet`).
+- **Safety settings reach the helper too:** `_headers` (content security policy) also applies to `sw.js`. Anything the helper fetches must be in `connect-src`, or the app breaks once the helper takes over. After changing `_headers`, change `HELPER_VERSION` in `sw.js` so installed helpers update.
 - **Redraws:** the list is briefly emptied while re-rendering; hold its height and scroll position or the page jumps to the top.
 
 ## Known gaps
