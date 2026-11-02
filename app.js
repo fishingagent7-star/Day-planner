@@ -1596,7 +1596,7 @@
   });
 
   // ---------- settings ----------
-  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, followSun:false };
+  var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, followSun:false, remindMinutes:5 };
   // Ready-made looks. Picking one fills in the colour settings below (the font stays
   // whatever you chose); the rest of each look is CSS in styles.css, switched on by <body data-theme="...">.
   var THEMES = {
@@ -1702,6 +1702,7 @@
     document.getElementById('consistencyBlock').style.display = settings.showConsistency ? 'block' : 'none';
     showNightSkyToggle.checked = !!settings.showNightSky;
     goodDaySelect.value = String(settings.goodDay);
+    document.getElementById('remindMinutesSelect').value = String(settings.remindMinutes);
     document.getElementById('nightSkyBlock').style.display = settings.showNightSky ? 'block' : 'none';
     if(settings.showConsistency || settings.showNightSky){ // both are drawn from the same day-by-day history
       if(!consLoaded){ loadConsistencyCache(); } else { renderConsistency(); }
@@ -1787,6 +1788,15 @@
     saveSettings();
   });
 
+  // how early reminders come; saved with the settings, so every device (and the sender) uses it
+  var remindMinutesSelect = document.getElementById('remindMinutesSelect');
+  remindMinutesSelect.addEventListener('change', function(e){
+    settings.remindMinutes = parseInt(e.target.value, 10);
+    applySettings();
+    saveSettings();
+    if(remindersOn) showReminders(true);
+  });
+
   showConsistencyToggle.addEventListener('change', function(e){
     settings.showConsistency = e.target.checked;
     applySettings();
@@ -1813,7 +1823,7 @@
   function showReminders(on, note){
     remindersOn = on;
     remindersBtn.textContent = on ? 'Turn off reminders' : 'Turn on reminders';
-    remindersStatus.textContent = note || (on ? 'On for this device, 5 minutes before each block' : '');
+    remindersStatus.textContent = note || (on ? 'On for this device, ' + settings.remindMinutes + ' minutes before each block' : '');
   }
   // The same device always gets the same key, so turning on twice doesn't save it twice.
   function pushKey(sub){

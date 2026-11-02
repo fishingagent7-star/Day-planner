@@ -1,7 +1,8 @@
 // ---------- reminder sender (Supabase Edge Function "send-reminders") ----------
 // Supabase runs this every minute (a cron job). For each person who turned
 // reminders on (their pushsub:* rows), it reads today's plan and sends
-// "starts in 5 min" for blocks about to begin. It remembers what it sent in
+// "starts in N min" for blocks about to begin (N is "Remind me … before" in Settings),
+// including repeating blocks on days the app hasn't been opened yet. It remembers what it sent in
 // remindsent:<day>, so nothing arrives twice.
 // Secrets needed (Edge Functions → Secrets): VAPID_PRIVATE_KEY and CRON_SECRET.
 import { createClient } from "npm:@supabase/supabase-js@2.117.3";
@@ -42,13 +43,24 @@ export function localNow(tz: string, at = new Date()) {
 }
 
 // Blocks starting within the next `ahead` minutes that aren't done or already reminded.
+// A block is remembered by its time and title (not its id): a repeating block can be
+// reminded before the app has added it to the day, and adding it gives it a new id.
 export function dueBlocks(blocks: any[], already: string[], nowMinute: number, ahead: number) {
   return blocks.flatMap((b) => {
     const m = /^(\d\d):(\d\d)$/.exec(b?.time ?? "");
-    if (!m || b.done || already.includes(b.id)) return [];
+    const id = b?.time + "|" + b?.title;
+    if (!m || b.done || already.includes(id)) return [];
     const left = +m[1] * 60 + +m[2] - nowMinute;
-    return left >= 0 && left <= ahead ? [{ id: b.id, title: b.title, left }] : [];
+    return left >= 0 && left <= ahead ? [{ id, title: b.title, left }] : [];
   });
+}
+
+// Blocks from repeating templates that the app hasn't added to the day yet (it adds
+// them when the day is first opened). Read only: the app still does the real adding.
+export function pendingRepeats(day: string, rules: any[], applied: string[], templates: any) {
+  const weekday = new Date(day + "T12:00:00Z").getUTCDay(); // 0 = Sunday, like the app
+  return rules.filter((r) => r?.weekdays?.includes(weekday) && !applied.includes(r.id))
+    .flatMap((r) => (templates[r.templateName] ?? []).map((t: any) => ({ time: t.time, title: t.title, done: false })));
 }
 
 async function readJson(userId: string, key: string, fallback: any) {
@@ -79,7 +91,10 @@ Deno.serve(async (req) => {
     const now = localNow(devices[0].tz || "Australia/Sydney");
     const sentKey = "remindsent:" + now.day;
     const already: string[] = await readJson(userId, sentKey, []);
-    const due = dueBlocks(await readJson(userId, "plan:" + now.day, []), already, now.minute, devices[0].minutes ?? 5);
+    const blocks = (await readJson(userId, "plan:" + now.day, [])).concat(pendingRepeats(now.day,
+      await readJson(userId, "recurring", []), await readJson(userId, "recurapplied:" + now.day, []), await readJson(userId, "templates", {})));
+    const minutes = (await readJson(userId, "settings", {})).remindMinutes ?? devices[0].minutes ?? 5;
+    const due = dueBlocks(blocks, already, now.minute, minutes);
     if (!due.length) continue;
 
     // Note them as sent first, so two runs close together can't both send.
