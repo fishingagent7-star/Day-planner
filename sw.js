@@ -11,7 +11,19 @@ var FILES = 'lodestar-files';
 // outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
 var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
-self.addEventListener('install', function(){ self.skipWaiting(); });
+// Save the files Lodestar needs to open as soon as the helper arrives, so it works
+// offline after just one visit (not only after the second).
+var CORE = ['./', 'index.html', 'styles.css', 'app.js', 'storage.js', 'sw.js', 'icon.svg', 'apple-touch-icon.png',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js'];
+self.addEventListener('install', function(e){
+  self.skipWaiting();
+  e.waitUntil(caches.open(FILES).then(function(c){
+    // one at a time, and a file that fails doesn't stop the rest
+    return CORE.reduce(function(chain, url){
+      return chain.then(function(){ return c.add(new Request(url, { cache: 'no-cache' })).catch(function(){}); });
+    }, Promise.resolve());
+  }));
+});
 self.addEventListener('activate', function(e){ e.waitUntil(self.clients.claim()); });
 
 self.addEventListener('fetch', function(e){
