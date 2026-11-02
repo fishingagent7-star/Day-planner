@@ -39,7 +39,7 @@ API: `get(key)` returns `{key, value}` (may return null OR throw when the key is
 - **Redraws:** the list is briefly emptied while re-rendering; hold its height and scroll position or the page jumps to the top.
 
 ## Known gaps
-- Some days may be duplicates of the previous day, caused by an old bug (before ~11am an empty day could copy the day before). Not cleaned up.
+- Checked 2026-11-02 (backup of 37 days): no copies from the old "empty day copies yesterday" bug (those would share block ids with the day before). Look-alike days come from recurring templates.
 
 ## Suggested first steps
 Outside Claude, `window.storage` doesn't exist, so the app cannot run at all until that is replaced. Do that first so every later step can actually be checked in a browser.
