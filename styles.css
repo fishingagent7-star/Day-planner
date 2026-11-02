@@ -1001,3 +1001,6 @@
   .tour-card .tour-skip:hover{background:none;color:#ffffff;}
   .tour-card .tour-back:hover{background:rgba(242,210,122,.12);border-color:#f2d27a;}
   .tour-card .tour-next:hover{background:#f7de97;}
+
+  /* the little star that floats up when a block is ticked (app.js tickStar) */
+  .tick-star{position:fixed;z-index:60;pointer-events:none;filter:drop-shadow(0 0 4px rgba(242,210,122,.8));}

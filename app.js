@@ -272,6 +272,28 @@
     setTimeout(function(){ s.remove(); if(!settings.tourDone) startTour(); }, 500);
   }
 
+  // ---------- a little star when a block is ticked ----------
+  // A tiny gold Lodestar star pops out of the checkbox, twinkles and floats up as it fades.
+  // Plays even with "reduce motion" on: the owner asked for gentle animations like this.
+  function tickStar(r){
+    if(!document.body.animate) return;
+    var star = document.createElement('span');
+    star.className = 'tick-star';
+    star.setAttribute('aria-hidden', 'true');
+    // the darker gold edge keeps it visible on light themes too
+    star.innerHTML = '<svg width="24" height="24" viewBox="-1 -1 22 22"><path d="M10 0 Q12.5 7.5 20 10 Q12.5 12.5 10 20 Q7.5 12.5 0 10 Q7.5 7.5 10 0 Z" fill="#f2d27a" stroke="#b8860b" stroke-width="1"/></svg>';
+    star.style.left = (r.left + r.width / 2 - 12) + 'px';
+    star.style.top = (r.top + r.height / 2 - 12) + 'px';
+    document.body.appendChild(star);
+    var drift = (Math.random() * 16 - 8).toFixed(0);
+    star.animate([
+      { transform: 'translate(0px, 0px) scale(0.2) rotate(0deg)', opacity: 0 },
+      { transform: 'translate(0px, -6px) scale(1.3) rotate(8deg)', opacity: 1, offset: 0.2 },
+      { transform: 'translate(' + (drift / 2) + 'px, -22px) scale(1) rotate(15deg)', opacity: 1, offset: 0.5 },
+      { transform: 'translate(' + drift + 'px, -46px) scale(0.6) rotate(25deg)', opacity: 0 }
+    ], { duration: 1100, easing: 'ease-out', fill: 'forwards' }).onfinish = function(){ star.remove(); };
+  }
+
   // ---------- welcome tour ----------
   // Shown once per account (settings.tourDone), after the logo screen; replay from Settings.
   // Each step lights up one real part of the page; a step whose part is hidden is left out.
@@ -897,6 +919,7 @@
       check.checked = !!b.done;
       check.addEventListener('change', function(e){
         b.done = e.target.checked;
+        if(b.done) tickStar(e.target.getBoundingClientRect()); // measured now, before the redraw replaces the box
         saveDay();
         renderDay();
       });
