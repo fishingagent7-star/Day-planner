@@ -179,7 +179,7 @@
   }
 
   var toastTimer = null;
-  function setStatus(text){
+  function setStatus(text, ms){
     var el = document.getElementById('toast');
     if(!el) return;
     el.textContent = text;
@@ -187,7 +187,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){
       el.classList.remove('show');
-    }, 1800);
+    }, ms || 1800);
   }
 
   function updateLastSaved(){
@@ -270,6 +270,24 @@
     if(!s) return;
     s.classList.add('gone');
     setTimeout(function(){ s.remove(); if(!settings.tourDone) startTour(); }, 500);
+  }
+
+  // ---------- noticing a streak, gently ----------
+  // When ticking a block makes today a good day, and that's 2 or more good days in a row,
+  // a short note says so. Never a warning about breaking it: kind to missed days.
+  function todayIsGood(){
+    var v = consCache[dateKey(new Date())];
+    return !!(v && v.total > 0 && v.done / v.total >= settings.goodDay);
+  }
+  function streakNote(){
+    if(!consLoaded || consLoading) return; // the history isn't all counted yet
+    var n = computeStreaks().current;
+    if(n < 2) return;
+    var text = n === 7 ? 'A whole week of good days in a row ✦'
+      : n === 30 ? '30 good days in a row. That’s a month ✦'
+      : n === 100 ? '100 good days in a row. Incredible ✦'
+      : n + ' good days in a row ✦';
+    setStatus(text, 3500);
   }
 
   // ---------- a little star when a block is ticked ----------
@@ -920,8 +938,10 @@
       check.addEventListener('change', function(e){
         b.done = e.target.checked;
         if(b.done) tickStar(e.target.getBoundingClientRect()); // measured now, before the redraw replaces the box
+        var wasGood = todayIsGood();
         saveDay();
-        renderDay();
+        renderDay(); // this updates today's done count
+        if(b.done && !wasGood && todayIsGood()) streakNote();
       });
       row.appendChild(check);
 
