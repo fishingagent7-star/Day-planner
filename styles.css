@@ -993,7 +993,11 @@
   .tour-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .tour-actions span{display:flex;gap:8px;}
   .tour-card button{min-height:44px;font:inherit;font-size:15px;border-radius:8px;cursor:pointer;}
-  .tour-skip{border:none;background:none;color:#c9d2ea;text-decoration:underline;padding:0 4px;}
-  .tour-back{border:1px solid #f2d27a;background:transparent;color:#f2d27a;padding:0 16px;}
-  .tour-next{border:none;background:#f2d27a;color:#141c30;font-weight:600;padding:0 18px;}
+  .tour-card .tour-skip{border:none;background:none;color:#c9d2ea;text-decoration:underline;padding:0 4px;}
+  .tour-card .tour-back{border:1px solid #f2d27a;background:transparent;color:#f2d27a;padding:0 16px;}
+  .tour-card .tour-next{border:none;background:#f2d27a;color:#141c30;font-weight:600;padding:0 18px;}
   .tour-card button:focus-visible{outline:2px solid #ffffff;outline-offset:2px;}
+  /* stronger than the app's general button:hover, which would turn Next pale when the card moves under the mouse */
+  .tour-card .tour-skip:hover{background:none;color:#ffffff;}
+  .tour-card .tour-back:hover{background:rgba(242,210,122,.12);border-color:#f2d27a;}
+  .tour-card .tour-next:hover{background:#f7de97;}
