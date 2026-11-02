@@ -7,6 +7,9 @@
 // Ctrl+Shift+R. Every file it fetches is kept as a copy, and with no internet
 // the copy is used, so Lodestar still opens offline. Online, the copy is never used.
 
+// Change this line whenever the site's safety settings (_headers) change: the browser only
+// re-fetches the helper, with the new settings, when this file's text changes.
+var HELPER_VERSION = '2026-11-03b';
 var FILES = 'lodestar-files';
 // outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
 var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
