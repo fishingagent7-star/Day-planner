@@ -77,6 +77,29 @@ if(!window.storage){
       document.getElementById('signOutBtn').addEventListener('click', function(){
         client.auth.signOut().then(function(){ location.reload(); });
       });
+
+      // Delete my account: Supabase's delete_my_account() removes this person's planner
+      // rows and their login. Typing DELETE first, because it can't be undone.
+      var deleteBox = document.getElementById('deleteAccountBox');
+      var deleteMsg = document.getElementById('deleteAccountMsg');
+      document.getElementById('deleteAccountBtn').addEventListener('click', function(){
+        deleteBox.hidden = !deleteBox.hidden;
+      });
+      document.getElementById('deleteAccountConfirm').addEventListener('click', function(){
+        if(document.getElementById('deleteAccountInput').value.trim().toUpperCase() !== 'DELETE'){
+          deleteMsg.textContent = 'Type DELETE in the box first.';
+          return;
+        }
+        deleteMsg.textContent = 'Deleting…';
+        client.rpc('delete_my_account').then(function(res){
+          if(res.error){ deleteMsg.textContent = 'That didn’t work: ' + res.error.message; return; }
+          // best effort: stop this device's reminders too, then leave
+          var stopPush = navigator.serviceWorker ? navigator.serviceWorker.getRegistration().then(function(reg){
+            return reg && reg.pushManager.getSubscription().then(function(sub){ return sub && sub.unsubscribe(); });
+          }).catch(function(){}) : Promise.resolve();
+          return stopPush.then(function(){ return client.auth.signOut(); }).catch(function(){}).then(function(){ location.reload(); });
+        });
+      });
     }
 
     // Turns a Supabase reply into its data, or into an error for the app's .catch.

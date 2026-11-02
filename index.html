@@ -170,6 +170,15 @@
     <p class="sub" id="compactStatus" style="margin:0 0 10px;"></p>
     <div class="toolbar">
       <button id="signOutBtn">Sign out</button>
+      <button id="deleteAccountBtn">Delete my account</button>
+    </div>
+    <div id="deleteAccountBox" hidden>
+      <p class="sub" style="margin:0 0 8px;">This permanently deletes your account and all your plans, on every device. It can't be undone. Export a backup first if you'd like to keep a copy. Type DELETE to confirm.</p>
+      <div class="toolbar">
+        <input type="text" id="deleteAccountInput" aria-label="Type DELETE to confirm" autocomplete="off">
+        <button id="deleteAccountConfirm" class="armed">Delete forever</button>
+        <span class="sub" id="deleteAccountMsg" role="status" style="margin:0;"></span>
+      </div>
     </div>
     </div>
     <div class="set-tab" data-tab="picture" role="tabpanel" hidden>
