@@ -2782,6 +2782,8 @@
     con.stars.forEach(function(st, i){
       var p = pt(st);
       if(i < lit){
+        // today just became a good day: a soft ring of light spreads out from its new star
+        if(i === freshIndex) svgEl('circle', { cx: p[0], cy: p[1], r: 10, 'class': 'sky-burst' }, parent);
         svgEl('circle', { cx: p[0], cy: p[1], r: small ? 2 + st[2] * 2.5 : 4 + st[2] * 5, filter: 'url(#skyGlow)',
           'class': 'sky-star' + (i === freshIndex ? ' fresh' : '') }, parent);
       } else if(!small){
@@ -2824,6 +2826,20 @@
     document.getElementById('skyBg').setAttribute('opacity', (A.bg + (B.bg - A.bg) * t).toFixed(2));
   }
   setInterval(function(){ if(settings.showNightSky) tintSky(); }, 60000);
+
+  // After sunset, a quiet line under the sky notices how today went. Always kind:
+  // a day that didn't go to plan gets "tomorrow's a fresh sky", never a telling-off.
+  function eveningNote(){
+    var now = new Date();
+    if(now.getHours() * 60 + now.getMinutes() < sunTimes(now).set) return '';
+    var v = consCache[dateKey(now)];
+    if(!v || !v.total) return '';
+    var text = v.done === v.total ? 'Every block done today ✦'
+      : v.done / v.total >= settings.goodDay ? v.done + ' of ' + v.total + ' done today. A good day.'
+      : v.done > 0 ? v.done + ' of ' + v.total + ' done today. Tomorrow’s a fresh sky.'
+      : 'Rest counts too. Tomorrow’s a fresh sky.';
+    return '<span class="sky-evening">' + text + '</span>';
+  }
 
   function renderNightSky(){
     if(!settings.showNightSky) return;
@@ -2873,7 +2889,7 @@
       : focus === CONSTELLATIONS.length - 1 ? '<b>Your sky is complete!</b> All 88 constellations collected.'
       : '<b>' + con.name + ' complete!</b> It joins your sky tomorrow.';
     document.getElementById('nightSkyCaption').innerHTML = line +
-      '<span class="sky-hint"> · Tap to open</span>' +
+      '<span class="sky-hint"> · Tap to open</span>' + eveningNote() +
       '<span class="sky-more"> · ' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
       '<br>A star for every day you finish ' + goal + ' of your blocks.' +
       (consLoading ? ' Counting your days…' : '') + '</span>';
