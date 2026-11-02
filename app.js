@@ -2772,13 +2772,13 @@
       { transform: 'translateX(220px)', opacity: 0 }
     ], { duration: 900, easing: 'ease-in' });
     // like a real one, it leaves a faint glowing trail that lingers for a moment after it's gone
-    var trail = svgEl('rect', { x: 0, y: -0.6, width: 220, height: 1.2, rx: 0.6, fill: '#fff6d8' }, g);
-    trail.style.transformOrigin = '0px 0px';
+    // (drawn on with a dash rather than stretched, because Safari stretches SVG from the wrong spot)
+    var trail = svgEl('line', { x1: 0, y1: 0, x2: 220, y2: 0, stroke: '#fff6d8', 'stroke-width': 1.2, 'stroke-dasharray': '220 220', 'stroke-dashoffset': 220, 'class': 'meteor-trail' }, g);
     trail.animate([
-      { transform: 'scaleX(0)', opacity: 0.35, easing: 'ease-in' },
-      { transform: 'scaleX(1)', opacity: 0.3, offset: 0.33 },
-      { transform: 'scaleX(1)', opacity: 0 }
-    ], { duration: 2700 }).onfinish = function(){ g.remove(); };
+      { strokeDashoffset: 220, opacity: 0, easing: 'ease-in' },
+      { strokeDashoffset: 0, opacity: 0.3, offset: 0.33 },
+      { strokeDashoffset: 0, opacity: 0 }
+    ], { duration: 2700, fill: 'forwards' }).onfinish = function(){ g.remove(); };
   }
 
   // A rare comet: a soft glowing head with a long faint tail. Real comets barely move,
