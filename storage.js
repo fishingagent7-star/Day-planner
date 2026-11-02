@@ -35,11 +35,13 @@ if(!window.storage){
       // Fires once at start-up (already signed in or not) and again after signing in.
       client.auth.onAuthStateChange(function(event, session){
         if(session && !userId){
-          userId = session.user.id;
-          box.hidden = true;
-          signedIn();
+          useAccount(session.user.id);
         } else if(!session && !userId){
-          box.hidden = false;
+          // offline and the sign-in couldn't be checked: carry on as the last person, from this device's copy
+          var last = null;
+          try{ last = localStorage.getItem('lodestar:lastUser'); }catch(e){}
+          if(!navigator.onLine && last) useAccount(last);
+          else box.hidden = false;
         }
       });
 
@@ -75,7 +77,12 @@ if(!window.storage){
       });
 
       document.getElementById('signOutBtn').addEventListener('click', function(){
-        client.auth.signOut().then(function(){ location.reload(); });
+        // send any waiting offline changes first; signing out clears this device's copy
+        sync().then(function(){
+          if(Object.keys(outbox).length && !confirm('Some changes haven’t synced yet, because you’re offline. Sign out anyway and lose them?')) return;
+          clearLocal();
+          return client.auth.signOut().then(function(){ location.reload(); });
+        });
       });
 
       // Delete my account: Supabase's delete_my_account() removes this person's planner
@@ -97,6 +104,7 @@ if(!window.storage){
           var stopPush = navigator.serviceWorker ? navigator.serviceWorker.getRegistration().then(function(reg){
             return reg && reg.pushManager.getSubscription().then(function(sub){ return sub && sub.unsubscribe(); });
           }).catch(function(){}) : Promise.resolve();
+          clearLocal();
           return stopPush.then(function(){ return client.auth.signOut(); }).catch(function(){}).then(function(){ location.reload(); });
         });
       });
@@ -108,40 +116,191 @@ if(!window.storage){
       return res.data;
     }
 
+    // ---------- talking to Supabase ----------
+    function rawGet(key){
+      return client.from(TABLE).select('value').eq('key', key).maybeSingle().then(check);
+    }
+    function rawSet(key, value){
+      return client.from(TABLE).upsert({ user_id: userId, key: key, value: value, updated_at: new Date().toISOString() }).then(check);
+    }
+    function rawDelete(key){
+      return client.from(TABLE).delete().eq('key', key).then(check);
+    }
+    // shortcut: returns at most 1000 keys (Supabase's default page size); page with .range() if anyone could have more.
+    function rawList(prefix){
+      var pattern = (prefix || '').replace(/[\\%_]/g, '\\$&') + '%'; // % and _ are wildcards in "like"
+      return client.from(TABLE).select('key').like('key', pattern).then(check).then(function(rows){
+        return rows.map(function(r){ return r.key; });
+      });
+    }
+
+    // ---------- this device's offline copy ----------
+    // The device keeps a copy of everything it reads or saves (copy), what the key lists
+    // looked like (lists), and changes made while offline (outbox), in localStorage, per
+    // account. Online, Supabase is always asked first; the copy is only used offline.
+    // An outbox change is "blind" when the device never had a copy of that key: it might
+    // not know what's really saved, so when it syncs it's merged in, never written over.
+    var copy = {}, lists = {}, outbox = {}, syncing = null;
+    function slot(name){ return 'lodestar:' + userId + ':' + name; }
+    function loadLocal(name){ try{ return JSON.parse(localStorage.getItem(slot(name))) || {}; }catch(e){ return {}; } }
+    function saveLocal(){
+      try{
+        localStorage.setItem(slot('copy'), JSON.stringify(copy));
+        localStorage.setItem(slot('lists'), JSON.stringify(lists));
+        localStorage.setItem(slot('outbox'), JSON.stringify(outbox));
+      }catch(e){ /* storage full or blocked: offline use just won't have the newest copy */ }
+    }
+    function clearLocal(){
+      try{
+        ['copy', 'lists', 'outbox'].forEach(function(n){ localStorage.removeItem(slot(n)); });
+        localStorage.removeItem('lodestar:lastUser');
+      }catch(e){}
+    }
+    function useAccount(id){
+      userId = id;
+      try{ localStorage.setItem('lodestar:lastUser', id); }catch(e){}
+      copy = loadLocal('copy'); lists = loadLocal('lists'); outbox = loadLocal('outbox');
+      box.hidden = true;
+      signedIn();
+      showNote();
+      sync();
+    }
+    // a failure from having no internet (as opposed to Supabase saying no)
+    function isOffline(err){
+      return !navigator.onLine || /fetch|network|load failed|timed? ?out/i.test((err && err.message) || String(err));
+    }
+
+    // The small note at the top: offline, or still sending changes.
+    function showNote(){
+      var el = document.getElementById('offlineNote');
+      if(!el) return;
+      var text = !navigator.onLine ? 'Offline. Changes will sync when you’re back online.'
+        : Object.keys(outbox).length ? 'Syncing your changes…' : '';
+      el.textContent = text;
+      el.hidden = !text;
+    }
+
+    function queue(key, value){
+      var old = outbox[key];
+      outbox[key] = { value: value, blind: old ? old.blind : !(key in copy) };
+      saveLocal();
+      showNote();
+      if(navigator.onLine) setTimeout(sync, 0); // e.g. a newer change to a key that was still waiting
+    }
+
+    // What a blind change becomes when it meets what's really saved: a day keeps all its saved
+    // blocks and gains the new ones; a list of ids gains the new ids; anything else keeps the saved value.
+    function mergeBlind(key, local, saved){
+      if(saved == null || local == null) return local;
+      try{
+        var a = JSON.parse(saved), b = JSON.parse(local);
+        if(!Array.isArray(a) || !Array.isArray(b)) return saved;
+        if(key.indexOf('plan:') === 0){
+          b.forEach(function(blk){
+            var dupe = a.some(function(s){ return s.id === blk.id || (s.time === blk.time && s.title === blk.title); });
+            if(!dupe) a.push(blk);
+          });
+          a.sort(function(x, y){ return String(x.time).localeCompare(String(y.time)); });
+        } else {
+          b.forEach(function(v){ if(a.indexOf(v) === -1) a.push(v); });
+        }
+        return JSON.stringify(a);
+      }catch(e){ return saved; }
+    }
+
+    // Send the outbox, one change at a time. Stops at the first failure and tries again later.
+    function sync(){
+      if(syncing) return syncing;
+      if(!userId || !navigator.onLine || !Object.keys(outbox).length){ showNote(); return Promise.resolve(); }
+      syncing = Object.keys(outbox).reduce(function(chain, key){
+        return chain.then(function(){
+          var entry = outbox[key];
+          if(!entry) return;
+          var value = entry.blind ? rawGet(key).then(function(row){ return mergeBlind(key, entry.value, row ? row.value : null); })
+            : Promise.resolve(entry.value);
+          return value.then(function(v){
+            return (v === null ? rawDelete(key) : rawSet(key, v)).then(function(){
+              if(outbox[key] === entry) delete outbox[key]; // a newer change made meanwhile stays queued
+              if(v === null) delete copy[key]; else copy[key] = v;
+              saveLocal();
+            });
+          });
+        });
+      }, Promise.resolve()).catch(function(){}).then(function(){ syncing = null; showNote(); });
+      return syncing;
+    }
+    window.addEventListener('online', function(){ sync(); });
+    window.addEventListener('offline', showNote);
+    setInterval(function(){ if(Object.keys(outbox).length) sync(); }, 30000);
+
     window.storage = {
       // Read one saved value. Gives back null if nothing is saved there.
+      // Offline: this device's copy, or an error if it never had one.
       get: function(key){
         return ready.then(function(){
-          return client.from(TABLE).select('value').eq('key', key).maybeSingle();
-        }).then(check).then(function(row){
-          return row ? { key: key, value: row.value } : null;
+          if(key in outbox) return outbox[key].value === null ? null : { key: key, value: outbox[key].value }; // a change still waiting to send is the newest
+          return rawGet(key).then(function(row){
+            if(row) copy[key] = row.value; else delete copy[key];
+            saveLocal();
+            return row ? { key: key, value: row.value } : null;
+          }, function(err){
+            if(isOffline(err) && key in copy) return { key: key, value: copy[key] };
+            throw err;
+          });
         });
       },
       // Save one value (always text), replacing any old one. Gives back
-      // something "truthy" so the app knows the save worked.
+      // something "truthy" so the app knows the save worked. Offline it's queued.
       set: function(key, value){
         return ready.then(function(){
-          return client.from(TABLE).upsert({ user_id: userId, key: key, value: value, updated_at: new Date().toISOString() });
-        }).then(check).then(function(){
-          return { key: key, value: value };
+          var send = navigator.onLine && !(key in outbox) ? rawSet(key, value) : Promise.reject(new Error('offline'));
+          return send.then(function(){
+            copy[key] = value;
+            saveLocal();
+          }, function(err){
+            if(!isOffline(err) && !(key in outbox)) throw err;
+            queue(key, value);
+            copy[key] = value;
+            saveLocal();
+          }).then(function(){ return { key: key, value: value }; });
         });
       },
-      // Remove one saved value.
+      // Remove one saved value. Offline it's queued.
       delete: function(key){
         return ready.then(function(){
-          return client.from(TABLE).delete().eq('key', key);
-        }).then(check).then(function(){
-          return true;
+          var send = navigator.onLine && !(key in outbox) ? rawDelete(key) : Promise.reject(new Error('offline'));
+          return send.then(function(){
+            delete copy[key];
+            saveLocal();
+          }, function(err){
+            if(!isOffline(err) && !(key in outbox)) throw err;
+            queue(key, null);
+            delete copy[key];
+            saveLocal();
+          }).then(function(){ return true; });
         });
       },
       // Find every saved key that starts with `prefix` (e.g. 'plan:' = all days).
-      // shortcut: returns at most 1000 keys (Supabase's default page size); page with .range() if anyone could have more.
+      // Offline: the last list this device saw, plus anything it has a copy of.
       list: function(prefix){
-        var pattern = (prefix || '').replace(/[\\%_]/g, '\\$&') + '%'; // % and _ are wildcards in "like"
+        prefix = prefix || '';
         return ready.then(function(){
-          return client.from(TABLE).select('key').like('key', pattern);
-        }).then(check).then(function(rows){
-          return { keys: rows.map(function(r){ return r.key; }) };
+          return rawList(prefix).then(function(keys){
+            lists[prefix] = keys;
+            saveLocal();
+            return keys;
+          }, function(err){
+            if(!isOffline(err)) throw err;
+            return (lists[prefix] || []).concat(Object.keys(copy).filter(function(k){ return k.indexOf(prefix) === 0; }));
+          });
+        }).then(function(keys){
+          // changes still waiting to send count too
+          Object.keys(outbox).forEach(function(k){
+            if(k.indexOf(prefix) !== 0) return;
+            if(outbox[k].value === null) keys = keys.filter(function(x){ return x !== k; });
+            else if(keys.indexOf(k) === -1) keys.push(k);
+          });
+          return { keys: keys.filter(function(k, i){ return keys.indexOf(k) === i; }) };
         });
       }
     };

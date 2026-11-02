@@ -30,6 +30,8 @@ Reminders: `sw.js` shows them; `supabase/functions/send-reminders` (Supabase Edg
 
 API: `get(key)` returns `{key, value}` (may return null OR throw when the key is missing), `set(key, value)`, `delete(key)`, `list(prefix)` returns `{keys}`. Writes were rate-limited, so they are done one at a time.
 
+Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-files`) and serves them when there is no internet. `storage.js` keeps a per-account copy in localStorage (`lodestar:<userId>:copy`, `:lists`, `:outbox`, plus `lodestar:lastUser`). Online, Supabase is always asked first. Offline, reads use the copy (a key never copied still fails, never "empty"), and writes queue in the outbox and sync when back online. A "blind" queued change (the device never had that key) is merged on sync: a day keeps its saved blocks and gains new ones, id lists are unioned, and anything else keeps the saved value. A known key: the last change synced wins. Signing out or deleting the account clears the copy.
+
 ## Lessons already learned (please don't repeat these bugs)
 - **Dates:** build day keys from the LOCAL date (`localDateStr`). Never use `toISOString()`: it shifts the day in Sydney (UTC+10/+11).
 - **Loading a day is async:** build the day privately and ignore results from older loads (`loadSeq`), otherwise a slow load can land on the wrong day and get overwritten.

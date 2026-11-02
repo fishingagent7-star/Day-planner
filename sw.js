@@ -2,16 +2,36 @@
 // The phone keeps this small file running in the background, even when the
 // planner is closed. Its only job: show a reminder when Supabase sends one,
 // and open the planner when the reminder is tapped.
-// It doesn't save copies of the app's files. It also asks the website whether
-// each file changed (instead of trusting the browser's 10-minute copy), so an
-// upload shows up on the next load without Ctrl+Shift+R.
+// It also asks the website whether each file changed (instead of trusting the
+// browser's 10-minute copy), so an upload shows up on the next load without
+// Ctrl+Shift+R. Every file it fetches is kept as a copy, and with no internet
+// the copy is used, so Lodestar still opens offline. Online, the copy is never used.
+
+var FILES = 'lodestar-files';
+// outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
+var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', function(){ self.skipWaiting(); });
 self.addEventListener('activate', function(e){ e.waitUntil(self.clients.claim()); });
 
 self.addEventListener('fetch', function(e){
-  if(e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return;
-  e.respondWith(fetch(e.request, { cache: 'no-cache' }));
+  var url = new URL(e.request.url);
+  var ours = url.origin === location.origin;
+  if(e.request.method !== 'GET' || !(ours || OTHER_HOSTS.indexOf(url.hostname) !== -1)) return;
+  e.respondWith(fetch(e.request, ours ? { cache: 'no-cache' } : undefined).then(function(res){
+    if(res.ok){
+      var copy = res.clone();
+      caches.open(FILES).then(function(c){ return c.put(e.request, copy); });
+    }
+    return res;
+  }).catch(function(err){
+    // offline: use the copy from last time (ignoring ?query bits, so any page address works)
+    return caches.match(e.request, { ignoreSearch: true }).then(function(hit){
+      if(hit) return hit;
+      if(e.request.mode === 'navigate') return caches.match('./', { ignoreSearch: true }).then(function(home){ if(home) return home; throw err; });
+      throw err;
+    });
+  }));
 });
 
 self.addEventListener('push', function(e){
