@@ -2770,7 +2770,7 @@
       { opacity: 1, offset: 0.2 },
       { opacity: 1, offset: 0.7 },
       { transform: 'translateX(220px)', opacity: 0 }
-    ], { duration: 900, easing: 'ease-in' });
+    ], { duration: 900, easing: 'ease-in', fill: 'forwards' }); // stays gone at the end, or it snaps back to the start while the trail fades
     // like a real one, it leaves a faint glowing trail that lingers for a moment after it's gone
     // (drawn on with a dash rather than stretched, because Safari stretches SVG from the wrong spot)
     var trail = svgEl('line', { x1: 0, y1: 0, x2: 220, y2: 0, stroke: '#fff6d8', 'stroke-width': 1.2, 'stroke-dasharray': '220 220', 'stroke-dashoffset': 220, 'class': 'meteor-trail' }, g);
