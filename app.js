@@ -2756,6 +2756,7 @@
     if(!settings.showNightSky || document.hidden || !skyFx.animate) return;
     var open = skyBlock.classList.contains('open');
     var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
+    if(!cometShowing && Math.random() < 1 / 50){ comet(open, top, bottom); return; } // rare: about once every 8 minutes
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
@@ -2769,7 +2770,37 @@
       { opacity: 1, offset: 0.2 },
       { opacity: 1, offset: 0.7 },
       { transform: 'translateX(220px)', opacity: 0 }
-    ], { duration: 900, easing: 'ease-in' }).onfinish = function(){ g.remove(); };
+    ], { duration: 900, easing: 'ease-in' });
+    // like a real one, it leaves a faint glowing trail that lingers for a moment after it's gone
+    var trail = svgEl('rect', { x: 0, y: -0.6, width: 220, height: 1.2, rx: 0.6, fill: '#fff6d8' }, g);
+    trail.style.transformOrigin = '0px 0px';
+    trail.animate([
+      { transform: 'scaleX(0)', opacity: 0.35, easing: 'ease-in' },
+      { transform: 'scaleX(1)', opacity: 0.3, offset: 0.33 },
+      { transform: 'scaleX(1)', opacity: 0 }
+    ], { duration: 2700 }).onfinish = function(){ g.remove(); };
+  }
+
+  // A rare comet: a soft glowing head with a long faint tail. Real comets barely move,
+  // so it fades in, drifts a tiny way over about half a minute, and fades out.
+  var cometShowing = false;
+  function comet(open, top, bottom){
+    cometShowing = true;
+    // closed: tail nearly level so it fits the strip; open: any angle
+    var angle = open ? Math.random() * 360 : (Math.random() < 0.5 ? 0 : 180) + Math.random() * 16 - 8;
+    var x = 250 + Math.random() * 500, y = top + 10 + Math.random() * Math.max(0, bottom - top - 20);
+    var g = svgEl('g', { transform: 'translate(' + x.toFixed(0) + ' ' + y.toFixed(0) + ') rotate(' + angle.toFixed(0) + ') scale(1.5)' }, skyFx);
+    var body = svgEl('g', {}, g);
+    // the tail fans out behind the head (meteorGrad goes from clear to bright, so the bright end is at the head)
+    svgEl('path', { d: 'M-170 -9 Q-80 -4 0 -1.5 L0 1.5 Q-80 4 -170 9 Z', fill: 'url(#meteorGrad)', opacity: 0.55 }, body);
+    svgEl('path', { d: 'M-130 -16 Q-60 -6 0 0', fill: 'none', stroke: '#bcd2ff', 'stroke-opacity': 0.3, 'stroke-width': 1.2 }, body); // the faint blue ion tail
+    svgEl('circle', { r: 4, fill: '#fffbe8', filter: 'url(#skyGlow)' }, body);
+    body.animate([
+      { transform: 'translateX(0px)', opacity: 0 },
+      { opacity: 1, offset: 0.2 },
+      { opacity: 1, offset: 0.8 },
+      { transform: 'translateX(30px)', opacity: 0 }
+    ], { duration: 30000, easing: 'linear' }).onfinish = function(){ g.remove(); cometShowing = false; };
   }
   function satellite(open, top, bottom){
     satelliteCrossing = true;

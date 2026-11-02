@@ -957,8 +957,8 @@
   /* the collection grid under the open sky */
   .sky-collection{display:none;grid-template-columns:repeat(auto-fill, minmax(84px, 1fr));gap:8px;margin-top:12px;max-height:340px;overflow-y:auto;cursor:default;}
   .night-sky.open .sky-collection{display:grid;}
-  .sky-tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:8px;background:#121a33;opacity:.35;}
-  .sky-tile.got, .sky-tile.now{opacity:1;}
+  .sky-tile{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;border-radius:8px;background:#121a33;}
+  .sky-tile:not(.got):not(.now) > *{opacity:.3;} /* not collected yet: a faint outline on the same night blue */
   .sky-tile.now{outline:1px solid #8fa7d8;}
   .sky-tile svg{width:100%;height:auto;}
   .sky-tile span{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;font-size:11px;color:#c9d2ea;text-align:center;line-height:1.2;}
