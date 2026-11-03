@@ -2778,9 +2778,10 @@
   }
   function tintSky(){
     var now = new Date(), sun = sunTimes(now), m = now.getHours() * 60 + now.getMinutes();
-    // key moments in minutes after midnight; the colours blend between them
-    var keys = [[0, 'night'], [sun.rise - 60, 'night'], [sun.rise + 15, 'dawn'], [sun.rise + 150, 'midday'],
-                [sun.set - 90, 'midday'], [sun.set + 10, 'sunset'], [sun.set + 80, 'night'], [1440, 'night']];
+    // key moments in minutes after midnight; the colours blend between them. Real twilight is
+    // short: the glow is gone ~40 minutes after sunset (and starts ~40 before sunrise).
+    var keys = [[0, 'night'], [sun.rise - 40, 'night'], [sun.rise + 10, 'dawn'], [sun.rise + 150, 'midday'],
+                [sun.set - 90, 'midday'], [sun.set, 'sunset'], [sun.set + 40, 'night'], [1440, 'night']];
     var i = 0;
     while(i < keys.length - 2 && m > keys[i + 1][0]) i++;
     var A = SKY_LOOKS[keys[i][1]], B = SKY_LOOKS[keys[i + 1][1]];
