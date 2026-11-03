@@ -19,6 +19,7 @@ if(!window.storage){
     var passwordInput = document.getElementById('signInPassword');
     var msg = document.getElementById('signInMsg');
     function say(text){ msg.textContent = text; }
+    function problem(err){ return isOffline(err) ? 'You’re offline. Connect to the internet, then try again.' : err.message; }
 
     // Every drawer call waits here until someone is signed in.
     var userId = null;
@@ -79,7 +80,7 @@ if(!window.storage){
         if(token === false) return;
         say('Sending…');
         client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken: token })
-          .then(function(res){ say(res.error ? res.error.message : 'If there’s an account for that email, a link to choose a new password is on its way.'); });
+          .then(function(res){ say(res.error ? problem(res.error) : 'If there’s an account for that email, a link to choose a new password is on its way.'); });
       });
       var resetting = false;
       client.auth.onAuthStateChange(function(event){
@@ -103,7 +104,7 @@ if(!window.storage){
         if(resetting){
           say('Saving…');
           client.auth.updateUser({ password: password }).then(function(res){
-            if(res.error){ say(res.error.message); return; }
+            if(res.error){ say(problem(res.error)); return; }
             resetting = false;
             box.hidden = true;
           });
@@ -114,14 +115,14 @@ if(!window.storage){
         if(!creating){
           say('Signing in…');
           client.auth.signInWithPassword({ email: email, password: password, options: { captchaToken: token } })
-            .then(function(res){ if(res.error) say(res.error.message); });
+            .then(function(res){ if(res.error) say(problem(res.error)); });
           return;
         }
         say('Creating your account…');
         // the confirmation email links back to this page, wherever it's hosted
         client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname, captchaToken: token } })
           .then(function(res){
-            if(res.error) say(res.error.message);
+            if(res.error) say(problem(res.error));
             else if(!res.data.session){ setMode(false); say('Almost done: check your email and tap the confirmation link, then sign in here.'); }
           });
       });
