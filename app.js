@@ -949,11 +949,15 @@
       timeInput.type = 'time';
       timeInput.step = 300;
       timeInput.value = b.time;
+      // Browsers send "change" after each typed digit (12:0|3 before the 0 of 30), so save
+      // straight away but only redraw (which closes the box) once the person leaves it.
       timeInput.addEventListener('change', function(e){
+        if(!e.target.value) return;
         b.time = e.target.value;
         saveDay();
-        renderDay();
+        timeInput.dataset.changed = '1';
       });
+      timeInput.addEventListener('blur', function(){ if(timeInput.dataset.changed) renderDay(); });
       timeCol.appendChild(timeInput);
 
       if(b.duration == null) b.duration = 30;
@@ -1012,14 +1016,16 @@
       endTimeInput.className = 'end-time-input';
       endTimeInput.value = minutesToTime(timeToMinutes(b.time) + b.duration);
       endTimeInput.addEventListener('change', function(e){
+        if(!e.target.value) return;
         var startMin = timeToMinutes(b.time);
         var endMin = timeToMinutes(e.target.value);
         var newDuration = endMin - startMin;
         if(newDuration <= 0) newDuration += 24 * 60; // end time rolled past midnight
         b.duration = Math.max(5, newDuration);
         saveDay();
-        renderDay();
+        endTimeInput.dataset.changed = '1';
       });
+      endTimeInput.addEventListener('blur', function(){ if(endTimeInput.dataset.changed) renderDay(); }); // same as the start time
       endTimeRow.appendChild(endArrow);
       endTimeRow.appendChild(endTimeInput);
       timeCol.appendChild(endTimeRow);
