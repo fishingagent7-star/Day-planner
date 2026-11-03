@@ -54,13 +54,48 @@ if(!window.storage){
         document.getElementById('signInSwitchText').textContent = c ? 'Already have an account?' : 'New here?';
         document.getElementById('signInSwitch').textContent = c ? 'Sign in' : 'Create an account';
         passwordInput.autocomplete = c ? 'new-password' : 'current-password';
+        document.getElementById('forgotLine').hidden = c;
         say('');
       }
       document.getElementById('signInSwitch').addEventListener('click', function(){ setMode(!creating); });
 
+      // Forgot password: Supabase emails a link back to this page. Opening it signs the
+      // person in and fires PASSWORD_RECOVERY, which turns this screen into "choose a new password".
+      document.getElementById('forgotBtn').addEventListener('click', function(){
+        var email = emailInput.value.trim();
+        if(!email){ say('Type your email above first, then tap Forgot password.'); emailInput.focus(); return; }
+        say('Sending…');
+        client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname })
+          .then(function(res){ say(res.error ? res.error.message : 'If there’s an account for that email, a link to choose a new password is on its way.'); });
+      });
+      var resetting = false;
+      client.auth.onAuthStateChange(function(event){
+        if(event !== 'PASSWORD_RECOVERY') return;
+        resetting = true;
+        emailInput.required = false;
+        emailInput.parentNode.hidden = true;
+        document.getElementById('signInSwitchText').parentNode.hidden = true;
+        document.getElementById('forgotLine').hidden = true;
+        document.getElementById('signInIntro').textContent = 'Choose a new password (at least 6 characters).';
+        document.getElementById('signInBtn').textContent = 'Save new password';
+        passwordInput.autocomplete = 'new-password';
+        passwordInput.value = '';
+        say('');
+        box.hidden = false;
+      });
+
       form.addEventListener('submit', function(e){
         e.preventDefault();
         var email = emailInput.value.trim(), password = passwordInput.value;
+        if(resetting){
+          say('Saving…');
+          client.auth.updateUser({ password: password }).then(function(res){
+            if(res.error){ say(res.error.message); return; }
+            resetting = false;
+            box.hidden = true;
+          });
+          return;
+        }
         if(!creating){
           say('Signing in…');
           client.auth.signInWithPassword({ email: email, password: password })
@@ -160,7 +195,7 @@ if(!window.storage){
       userId = id;
       try{ localStorage.setItem('lodestar:lastUser', id); }catch(e){}
       copy = loadLocal('copy'); lists = loadLocal('lists'); outbox = loadLocal('outbox');
-      box.hidden = true;
+      box.hidden = resetting; // a password-reset link keeps the "new password" screen up
       signedIn();
       showNote();
       sync();
