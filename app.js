@@ -484,7 +484,7 @@
     wrap.innerHTML = '';
     DATES.forEach(function(d, i){
       var btn = document.createElement('button');
-      btn.className = 'daytab' + (i === activeIndex ? ' active' : '');
+      btn.className = 'daytab' + (i === activeIndex ? ' active' : '') + (d.toDateString() === new Date().toDateString() ? ' today' : '');
       btn.textContent = d.toLocaleDateString(undefined, {weekday:'short', day:'numeric'});
       btn.addEventListener('click', function(){
         if(i === activeIndex) return;
@@ -1396,8 +1396,6 @@
   var undoBtn = document.getElementById('undoBtn');
   var redoBtn = document.getElementById('redoBtn');
 
-  var todayBtn = document.getElementById('todayBtn');
-
   var copyYesterdayBtn = document.getElementById('copyYesterdayBtn');
   copyYesterdayBtn.addEventListener('click', function(){
     var current = DATES[activeIndex];
@@ -1456,14 +1454,15 @@
       moreMenu.style.display = 'none';
     }
   });
-  todayBtn.addEventListener('click', function(){
+  // the T key (today's tab has a gold outline, so there's no button for it)
+  function goToToday(){
     var todayStr = new Date().toDateString();
     var idx = DATES.findIndex(function(d){ return d.toDateString() === todayStr; });
     if(idx === -1 || idx === activeIndex) return;
     activeIndex = idx;
     renderTabs();
     loadDay();
-  });
+  }
 
   function updateUndoRedoButtons(){
     undoBtn.disabled = historyStack.length === 0;
@@ -1516,7 +1515,7 @@
       sortBlocks();
     } else if(e.key.toLowerCase() === 't'){
       e.preventDefault();
-      todayBtn.click();
+      goToToday();
     } else if(e.key === ','){
       e.preventDefault();
       document.getElementById('settingsToggle').click();

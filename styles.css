@@ -137,6 +137,7 @@
     cursor:pointer;
   }
   .daytab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .daytab.today{border-color:#c99a2e;} /* thin gold outline marks today, even when another day is open */
   .daytab:hover:not(.active){background:var(--accent-soft);}
   .daytabs-row{
     display:flex;
@@ -163,7 +164,7 @@
   }
   .daytabs-scroll{ grid-area:tabs; min-width:0; }
   .control-grid .daytabs{ margin-bottom:0; }
-  .control-grid #todayBtn{ grid-area:today; }
+  .control-grid .mini-history{ grid-area:today; }
   .control-grid .more-menu-wrap{ grid-area:more; }
   .control-grid #addBtn{ grid-area:add; justify-self:start; }
   .control-grid #sortBtn{ grid-area:sort; justify-self:start; }
