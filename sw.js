@@ -9,14 +9,14 @@
 
 // Change this line whenever the site's safety settings (_headers) change: the browser only
 // re-fetches the helper, with the new settings, when this file's text changes.
-var HELPER_VERSION = '2026-11-03b';
+var HELPER_VERSION = '2026-11-03c';
 var FILES = 'lodestar-files';
 // outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
 var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 // Save the files Lodestar needs to open as soon as the helper arrives, so it works
 // offline after just one visit (not only after the second).
-var CORE = ['./', 'index.html', 'styles.css', 'app.js', 'storage.js', 'sw.js', 'icon.svg', 'apple-touch-icon.png',
+var CORE = ['./', 'styles.css', 'app.js', 'storage.js', 'sw.js', 'icon.svg', 'apple-touch-icon.png',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js'];
 self.addEventListener('install', function(e){
   self.skipWaiting();
@@ -40,10 +40,15 @@ self.addEventListener('fetch', function(e){
     }
     return res;
   }).catch(function(err){
-    // offline: use the copy from last time (ignoring ?query bits, so any page address works)
-    return caches.match(e.request, { ignoreSearch: true }).then(function(hit){
+    // Offline: use the copy from last time. ignoreSearch: any ?query bits; ignoreVary: iPhone
+    // asks for pages slightly differently offline, and the site's "Vary" label would make the
+    // copy count as not matching. Opening the app always falls back to the saved home page.
+    var loose = { ignoreSearch: true, ignoreVary: true };
+    var first = e.request.mode === 'navigate' ? caches.match('./', loose) : caches.match(e.request, loose);
+    return first.then(function(hit){
+      return hit || caches.match(e.request, loose) || null;
+    }).then(function(hit){
       if(hit) return hit;
-      if(e.request.mode === 'navigate') return caches.match('./', { ignoreSearch: true }).then(function(home){ if(home) return home; throw err; });
       throw err;
     });
   }));
