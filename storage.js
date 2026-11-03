@@ -180,32 +180,67 @@ if(!window.storage){
       el.hidden = !text;
     }
 
+    // Each waiting change remembers what the device had before it (base), so syncing can apply
+    // only what was changed here and keep changes made on other devices meanwhile.
     function queue(key, value){
       var old = outbox[key];
-      outbox[key] = { value: value, blind: old ? old.blind : !(key in copy) };
+      outbox[key] = old ? { value: value, blind: old.blind, base: old.base }
+        : { value: value, blind: !(key in copy), base: key in copy ? copy[key] : null };
       saveLocal();
       showNote();
       if(navigator.onLine) setTimeout(sync, 0); // e.g. a newer change to a key that was still waiting
     }
 
-    // What a blind change becomes when it meets what's really saved: a day keeps all its saved
-    // blocks and gains the new ones; a list of ids gains the new ids; anything else keeps the saved value.
-    function mergeBlind(key, local, saved){
-      if(saved == null || local == null) return local;
-      try{
-        var a = JSON.parse(saved), b = JSON.parse(local);
-        if(!Array.isArray(a) || !Array.isArray(b)) return saved;
-        if(key.indexOf('plan:') === 0){
-          b.forEach(function(blk){
-            var dupe = a.some(function(s){ return s.id === blk.id || (s.time === blk.time && s.title === blk.title); });
-            if(!dupe) a.push(blk);
-          });
-          a.sort(function(x, y){ return String(x.time).localeCompare(String(y.time)); });
-        } else {
-          b.forEach(function(v){ if(a.indexOf(v) === -1) a.push(v); });
-        }
+    function same(x, y){ return JSON.stringify(x) === JSON.stringify(y); }
+    function parse(text){ try{ return JSON.parse(text); }catch(e){ return undefined; } }
+
+    // A day: start from what's saved now, then apply this device's changes block by block.
+    function mergeDay(saved, local, base){
+      var result = saved.slice();
+      var baseById = {};
+      (base || []).forEach(function(b){ baseById[b.id] = b; });
+      local.forEach(function(blk){
+        var before = baseById[blk.id], i = result.findIndex(function(s){ return s.id === blk.id; });
+        if(!before){
+          // added here (or the device never saw this day): add it unless it's already there
+          var dupe = i !== -1 || result.some(function(s){ return s.time === blk.time && s.title === blk.title; });
+          if(!dupe) result.push(blk);
+        } else if(!same(blk, before) && i !== -1){
+          result[i] = blk; // changed here (ticked, renamed…): this device's version
+        } // a block deleted elsewhere stays deleted
+      });
+      (base || []).forEach(function(b){
+        // deleted here: remove it, unless another device changed it meanwhile
+        if(local.some(function(l){ return l.id === b.id; })) return;
+        var i = result.findIndex(function(s){ return s.id === b.id; });
+        if(i !== -1 && same(result[i], b)) result.splice(i, 1);
+      });
+      return result.sort(function(x, y){ return String(x.time).localeCompare(String(y.time)); });
+    }
+
+    // What a waiting change becomes when it meets what's really saved now.
+    function mergeChange(key, entry, saved){
+      var local = entry.value;
+      if(!entry.blind && saved === entry.base) return local; // nothing changed elsewhere: send ours as is
+      if(local === null) return entry.blind ? saved : null;  // deleted here
+      if(saved == null) return local;
+      var a = parse(saved), b = parse(local), base = entry.blind ? null : parse(entry.base);
+      if(a === undefined || b === undefined) return entry.blind ? saved : local;
+      if(Array.isArray(a) && Array.isArray(b)){
+        if(key.indexOf('plan:') === 0) return JSON.stringify(mergeDay(a, b, Array.isArray(base) ? base : null));
+        // other lists (applied rules, categories…): keep everything, no doubles
+        b.forEach(function(v){ if(!a.some(function(x){ return same(x, v); })) a.push(v); });
         return JSON.stringify(a);
-      }catch(e){ return saved; }
+      }
+      if(a && b && typeof a === 'object' && typeof b === 'object' && !Array.isArray(a) && !Array.isArray(b)){
+        // settings, templates…: field by field, only the fields changed here. If this device never
+        // had them, its values may just be defaults, so what's saved wins.
+        if(entry.blind) return saved;
+        Object.keys(b).forEach(function(k){ if(!base || !same(b[k], base[k])) a[k] = b[k]; });
+        if(base) Object.keys(base).forEach(function(k){ if(!(k in b) && same(a[k], base[k])) delete a[k]; });
+        return JSON.stringify(a);
+      }
+      return entry.blind ? saved : local;
     }
 
     // Send the outbox, one change at a time. Stops at the first failure and tries again later.
@@ -216,11 +251,10 @@ if(!window.storage){
         return chain.then(function(){
           var entry = outbox[key];
           if(!entry) return;
-          var value = entry.blind ? rawGet(key).then(function(row){ return mergeBlind(key, entry.value, row ? row.value : null); })
-            : Promise.resolve(entry.value);
-          return value.then(function(v){
+          return rawGet(key).then(function(row){ return mergeChange(key, entry, row ? row.value : null); }).then(function(v){
             return (v === null ? rawDelete(key) : rawSet(key, v)).then(function(){
-              if(outbox[key] === entry) delete outbox[key]; // a newer change made meanwhile stays queued
+              if(outbox[key] === entry) delete outbox[key];
+              else if(outbox[key]){ outbox[key].base = v; outbox[key].blind = false; } // a newer change made meanwhile stays queued, now based on what was just sent
               if(v === null) delete copy[key]; else copy[key] = v;
               saveLocal();
             });
@@ -230,6 +264,12 @@ if(!window.storage){
       return syncing;
     }
     window.addEventListener('online', function(){ sync(); });
+    // another tab of Lodestar changed the device's copy: pick it up, so neither tab overwrites the other's waiting changes
+    window.addEventListener('storage', function(e){
+      if(!userId || !e.key || e.key.indexOf('lodestar:' + userId + ':') !== 0) return;
+      copy = loadLocal('copy'); lists = loadLocal('lists'); outbox = loadLocal('outbox');
+      showNote();
+    });
     window.addEventListener('offline', showNote);
     setInterval(function(){ if(Object.keys(outbox).length) sync(); }, 30000);
 

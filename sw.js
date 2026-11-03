@@ -9,7 +9,7 @@
 
 // Change this line whenever the site's safety settings (_headers) change: the browser only
 // re-fetches the helper, with the new settings, when this file's text changes.
-var HELPER_VERSION = '2026-11-03c';
+var HELPER_VERSION = '2026-11-03d';
 var FILES = 'lodestar-files';
 // outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
 var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
@@ -44,11 +44,9 @@ self.addEventListener('fetch', function(e){
     // asks for pages slightly differently offline, and the site's "Vary" label would make the
     // copy count as not matching. Opening the app always falls back to the saved home page.
     var loose = { ignoreSearch: true, ignoreVary: true };
-    var first = e.request.mode === 'navigate' ? caches.match('./', loose) : caches.match(e.request, loose);
-    return first.then(function(hit){
-      return hit || caches.match(e.request, loose) || null;
-    }).then(function(hit){
+    return caches.match(e.request, loose).then(function(hit){
       if(hit) return hit;
+      if(e.request.mode === 'navigate') return caches.match('./', loose).then(function(home){ if(home) return home; throw err; });
       throw err;
     });
   }));
