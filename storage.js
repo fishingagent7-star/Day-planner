@@ -220,6 +220,9 @@ if(!window.storage){
     function isOffline(err){
       return !navigator.onLine || /fetch|network|load failed|timed? ?out/i.test((err && err.message) || String(err));
     }
+    // Ask Supabase only when there's internet. Offline, its sign-in check retries for ~20s before
+    // failing, which made every read (e.g. changing days) that slow.
+    function server(ask){ return navigator.onLine ? ask() : Promise.reject(new Error('offline')); }
 
     // The small note at the top: offline, or still sending changes.
     function showNote(){
@@ -330,7 +333,7 @@ if(!window.storage){
       get: function(key){
         return ready.then(function(){
           if(key in outbox) return outbox[key].value === null ? null : { key: key, value: outbox[key].value }; // a change still waiting to send is the newest
-          return rawGet(key).then(function(row){
+          return server(function(){ return rawGet(key); }).then(function(row){
             if(row) copy[key] = row.value; else delete copy[key];
             saveLocal();
             return row ? { key: key, value: row.value } : null;
@@ -378,7 +381,7 @@ if(!window.storage){
         prefix = prefix || '';
         var pattern = prefix.replace(/[\\%_]/g, '\\$&') + '%';
         return ready.then(function(){
-          return client.from(TABLE).select('key, value').like('key', pattern).then(check).then(function(rows){
+          return server(function(){ return client.from(TABLE).select('key, value').like('key', pattern).then(check); }).then(function(rows){
             var out = {};
             rows.forEach(function(r){ out[r.key] = r.value; copy[r.key] = r.value; });
             lists[prefix] = rows.map(function(r){ return r.key; });
@@ -404,7 +407,7 @@ if(!window.storage){
       list: function(prefix){
         prefix = prefix || '';
         return ready.then(function(){
-          return rawList(prefix).then(function(keys){
+          return server(function(){ return rawList(prefix); }).then(function(keys){
             lists[prefix] = keys;
             saveLocal();
             return keys;
