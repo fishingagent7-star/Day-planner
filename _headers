@@ -4,9 +4,10 @@
 #   script in index.html (its sha256 fingerprint; change it if that script changes).
 #   connect: our Supabase project, plus jsDelivr and Google Fonts so the offline helper (sw.js)
 #   can fetch and keep copies of the library and fonts. styles/fonts: Google Fonts. Inline styles are
-#   allowed because app.js colours things with element.style.
+#   allowed because app.js colours things with element.style. Cloudflare Turnstile (sign-in spam
+#   guard) needs its script and its little frame from challenges.cloudflare.com.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'sha256-YzgkbZVUUzu5ocRuPZ+Wgm/3PBrCjvAqiUcXK9kfepg='; connect-src 'self' https://mkhqwzkjgglppmwrdvsv.supabase.co wss://mkhqwzkjgglppmwrdvsv.supabase.co https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com 'sha256-YzgkbZVUUzu5ocRuPZ+Wgm/3PBrCjvAqiUcXK9kfepg='; connect-src 'self' https://mkhqwzkjgglppmwrdvsv.supabase.co wss://mkhqwzkjgglppmwrdvsv.supabase.co https://cdn.jsdelivr.net https://fonts.googleapis.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; worker-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()

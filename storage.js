@@ -59,13 +59,26 @@ if(!window.storage){
       }
       document.getElementById('signInSwitch').addEventListener('click', function(){ setMode(!creating); });
 
+      // Spam guard: Cloudflare Turnstile gives a one-use pass proving a person is here, which
+      // Supabase checks. false = still checking. If Turnstile didn't load, try without; Supabase decides.
+      function captcha(){
+        var token;
+        try{ token = turnstile.getResponse(); }catch(e){ return undefined; } // not loaded, or no widget
+
+        if(!token){ say('One moment, checking you’re not a robot… then try again.'); return false; }
+        turnstile.reset(); // each pass works once, so fetch a fresh one for next time
+        return token;
+      }
+
       // Forgot password: Supabase emails a link back to this page. Opening it signs the
       // person in and fires PASSWORD_RECOVERY, which turns this screen into "choose a new password".
       document.getElementById('forgotBtn').addEventListener('click', function(){
         var email = emailInput.value.trim();
         if(!email){ say('Type your email above first, then tap Forgot password.'); emailInput.focus(); return; }
+        var token = captcha();
+        if(token === false) return;
         say('Sending…');
-        client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname })
+        client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname, captchaToken: token })
           .then(function(res){ say(res.error ? res.error.message : 'If there’s an account for that email, a link to choose a new password is on its way.'); });
       });
       var resetting = false;
@@ -96,15 +109,17 @@ if(!window.storage){
           });
           return;
         }
+        var token = captcha();
+        if(token === false) return;
         if(!creating){
           say('Signing in…');
-          client.auth.signInWithPassword({ email: email, password: password })
+          client.auth.signInWithPassword({ email: email, password: password, options: { captchaToken: token } })
             .then(function(res){ if(res.error) say(res.error.message); });
           return;
         }
         say('Creating your account…');
         // the confirmation email links back to this page, wherever it's hosted
-        client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname } })
+        client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname, captchaToken: token } })
           .then(function(res){
             if(res.error) say(res.error.message);
             else if(!res.data.session){ setMode(false); say('Almost done: check your email and tap the confirmation link, then sign in here.'); }
