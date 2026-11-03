@@ -81,13 +81,10 @@
     <div class="more-menu-wrap">
       <button id="moreBtn" class="mini-btn today-btn" title="More options">&#8942;</button>
       <div class="more-menu" id="moreMenu" style="display:none;">
-        <button id="proportionalToggle">Timeline</button>
         <button id="copyYesterdayBtn">Copy previous day</button>
         <button id="templatesToggle">Templates</button>
-        <button id="categoriesToggle">Categories</button>
-        <button id="recurringToggle">Recurring</button>
-        <button id="settingsToggle" title="Shortcut: ,">Settings</button>
         <button id="summaryToggle">Summary</button>
+        <button id="settingsToggle" title="Shortcut: ,">Settings</button>
         <button class="danger" id="clearBtn">Clear day</button>
       </div>
     </div>
@@ -109,6 +106,8 @@
       <button type="button" role="tab" data-tab="look" aria-selected="true">Look</button>
       <button type="button" role="tab" data-tab="show" aria-selected="false">Show</button>
       <button type="button" role="tab" data-tab="picture" aria-selected="false">Picture</button>
+      <button type="button" role="tab" data-tab="categories" aria-selected="false">Categories</button>
+      <button type="button" role="tab" data-tab="recurring" aria-selected="false">Recurring</button>
       <button type="button" role="tab" data-tab="backup" aria-selected="false">Backup</button>
     </div>
     <div class="set-tab" data-tab="look" role="tabpanel">
@@ -205,6 +204,18 @@
       </label>
     </div>
     </div>
+    <div class="set-tab" data-tab="categories" role="tabpanel" hidden>
+      <div class="cat-manager" id="catManager"></div>
+    </div>
+    <div class="set-tab" data-tab="recurring" role="tabpanel" hidden>
+      <p class="sub" style="margin:0 0 8px;">Put a template on chosen days of the week automatically.</p>
+      <div class="toolbar">
+        <select id="recurTemplateSelect"></select>
+        <div class="weekday-picker" id="recurWeekdayPicker"></div>
+        <button class="primary" id="addRecurBtn">+ Auto-apply</button>
+      </div>
+      <div id="recurList"></div>
+    </div>
   </div>
 
   <div class="panel" id="templatesPanel" style="display:none;">
@@ -218,19 +229,6 @@
       <button class="danger" id="deleteTemplateBtn">Delete</button>
     </div>
     <p class="sub" id="templateStatus"></p>
-  </div>
-
-  <div class="panel" id="categoriesPanel" style="display:none;">
-    <div class="cat-manager" id="catManager"></div>
-  </div>
-
-  <div class="panel" id="recurringPanel" style="display:none;">
-    <div class="toolbar">
-      <select id="recurTemplateSelect"></select>
-      <div class="weekday-picker" id="recurWeekdayPicker"></div>
-      <button class="primary" id="addRecurBtn">+ Auto-apply</button>
-    </div>
-    <div id="recurList"></div>
   </div>
 
   <div class="track" id="track"></div>

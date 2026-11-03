@@ -148,7 +148,6 @@
     ];
   }
 
-  var proportionalMode = false;
 
   function tagColor(name){
     var hash = 0;
@@ -320,7 +319,7 @@
     { el: '#addBtn', title: 'Add a block', text: 'Tap here to add something to your day: a time, a title, and how long it takes. You can also save a whole day as a template.' },
     { el: '.block', title: 'Tick it off', text: 'Done? Tick it. Finish half of your blocks and it counts as a good day. You can change that in Settings.' },
     { el: '#nightSkyBlock', title: 'Your night sky', text: 'Every good day lights a star. Fill all 88 constellations. Missed days never take a star away.' },
-    { el: '#moreBtn', title: 'Make it yours', text: 'This menu holds Templates, Recurring and Settings: themes, repeating days, reminders and backups.' }
+    { el: '#moreBtn', title: 'Make it yours', text: 'This menu holds Templates, Summary and Settings: themes, categories, repeating days, reminders and backups.' }
   ];
   var tourBox = null, tourSteps = [], tourAt = 0, settingsLoaded = false;
 
@@ -886,13 +885,6 @@
       row.className = 'block' + (b.done ? ' done' : '') + (conflictIds[b.id] ? ' conflict' : '');
       row.draggable = true;
       row.dataset.id = b.id;
-
-      if(proportionalMode){
-        var duration = b.duration || 30;
-        var pxPerMin = 1.4;
-        var h = Math.max(46, Math.min(320, duration * pxPerMin));
-        row.style.minHeight = h + 'px';
-      }
 
       if(b.tags.length > 0){
         row.style.backgroundColor = tagColor(b.tags[0]);
@@ -1523,8 +1515,8 @@
       e.preventDefault();
       document.getElementById('settingsToggle').click();
     } else if(e.key === 'Escape'){
-      var panelIds = ['templatesPanel','categoriesPanel','recurringPanel','settingsPanel','summaryPanel'];
-      var toggleIds = ['templatesToggle','categoriesToggle','recurringToggle','settingsToggle','summaryToggle'];
+      var panelIds = ['templatesPanel','settingsPanel','summaryPanel'];
+      var toggleIds = ['templatesToggle','settingsToggle','summaryToggle'];
       var closedSomething = false;
       panelIds.forEach(function(id, i){
         var p = document.getElementById(id);
@@ -1559,47 +1551,23 @@
   });
 
   var templatesToggle = document.getElementById('templatesToggle');
-  var categoriesToggle = document.getElementById('categoriesToggle');
   var templatesPanel = document.getElementById('templatesPanel');
-  var categoriesPanel = document.getElementById('categoriesPanel');
 
   templatesToggle.addEventListener('click', function(){
     var open = templatesPanel.style.display !== 'none';
     templatesPanel.style.display = open ? 'none' : 'block';
     templatesToggle.classList.toggle('toggle-active', !open);
     if(!open){
-      categoriesPanel.style.display = 'none';
-      categoriesToggle.classList.remove('toggle-active');
       settingsPanelRef().style.display = 'none';
       document.getElementById('summaryPanel').style.display = 'none';
       document.getElementById('summaryToggle').classList.remove('toggle-active');
       document.getElementById('settingsToggle').classList.remove('toggle-active');
-      document.getElementById('recurringPanel').style.display = 'none';
-      document.getElementById('recurringToggle').classList.remove('toggle-active');
-    }
-  });
-
-  categoriesToggle.addEventListener('click', function(){
-    var open = categoriesPanel.style.display !== 'none';
-    categoriesPanel.style.display = open ? 'none' : 'block';
-    categoriesToggle.classList.toggle('toggle-active', !open);
-    if(!open){
-      templatesPanel.style.display = 'none';
-      templatesToggle.classList.remove('toggle-active');
-      settingsPanelRef().style.display = 'none';
-      document.getElementById('summaryPanel').style.display = 'none';
-      document.getElementById('summaryToggle').classList.remove('toggle-active');
-      document.getElementById('settingsToggle').classList.remove('toggle-active');
-      document.getElementById('recurringPanel').style.display = 'none';
-      document.getElementById('recurringToggle').classList.remove('toggle-active');
     }
   });
 
   function settingsPanelRef(){ return document.getElementById('settingsPanel'); }
 
   // ---------- recurring blocks ----------
-  var recurringToggle = document.getElementById('recurringToggle');
-  var recurringPanel = document.getElementById('recurringPanel');
   var recurTemplateSelect = document.getElementById('recurTemplateSelect');
   var recurWeekdayPicker = document.getElementById('recurWeekdayPicker');
   var addRecurBtn = document.getElementById('addRecurBtn');
@@ -1699,33 +1667,12 @@
     });
   });
 
-  recurringToggle.addEventListener('click', function(){
-    var open = recurringPanel.style.display !== 'none';
-    recurringPanel.style.display = open ? 'none' : 'block';
-    recurringToggle.classList.toggle('toggle-active', !open);
-    if(!open){
-      templatesPanel.style.display = 'none';
-      templatesToggle.classList.remove('toggle-active');
-      categoriesPanel.style.display = 'none';
-      categoriesToggle.classList.remove('toggle-active');
-      settingsPanelRef().style.display = 'none';
-      document.getElementById('settingsToggle').classList.remove('toggle-active');
-      var sp = document.getElementById('summaryPanel');
-      if(sp) sp.style.display = 'none';
-      var st = document.getElementById('summaryToggle');
-      if(st) st.classList.remove('toggle-active');
-      renderWeekdayPicker();
-      renderRecurTemplateSelect();
-      renderRecurList();
-    }
-  });
-
-  var proportionalToggle = document.getElementById('proportionalToggle');
-  proportionalToggle.addEventListener('click', function(){
-    proportionalMode = !proportionalMode;
-    proportionalToggle.classList.toggle('toggle-active', proportionalMode);
-    renderDay();
-  });
+  // Recurring lives in Settings → Recurring; refreshed each time Settings opens (templates may have changed)
+  function showRecurring(){
+    renderWeekdayPicker();
+    renderRecurTemplateSelect();
+    renderRecurList();
+  }
 
   // ---------- settings ----------
   var DEFAULT_SETTINGS = { bg:'#f6f4ee', accent:'#3a5a49', font:'serif', theme:'original', showProgress:true, showMiniTimeline:true, dark:false, quickAdd:false, showConsistency:true, showNightSky:true, goodDay:0.5, followSun:false, remindMinutes:5 };
@@ -2285,16 +2232,11 @@
     if(!open){
       templatesPanel.style.display = 'none';
       templatesToggle.classList.remove('toggle-active');
-      categoriesPanel.style.display = 'none';
-      categoriesToggle.classList.remove('toggle-active');
       var sp = document.getElementById('summaryPanel');
       if(sp) sp.style.display = 'none';
       var st = document.getElementById('summaryToggle');
       if(st) st.classList.remove('toggle-active');
-      var rp = document.getElementById('recurringPanel');
-      if(rp) rp.style.display = 'none';
-      var rt = document.getElementById('recurringToggle');
-      if(rt) rt.classList.remove('toggle-active');
+      showRecurring();
     }
   });
 
@@ -3184,14 +3126,8 @@
     if(!open){
       templatesPanel.style.display = 'none';
       templatesToggle.classList.remove('toggle-active');
-      categoriesPanel.style.display = 'none';
-      categoriesToggle.classList.remove('toggle-active');
       settingsPanelRef().style.display = 'none';
       document.getElementById('settingsToggle').classList.remove('toggle-active');
-      var rp2 = document.getElementById('recurringPanel');
-      if(rp2) rp2.style.display = 'none';
-      var rt2 = document.getElementById('recurringToggle');
-      if(rt2) rt2.classList.remove('toggle-active');
       buildSummary();
     }
   });

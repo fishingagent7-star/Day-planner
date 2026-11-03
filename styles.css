@@ -256,7 +256,8 @@
     background:var(--surface-alt);
   }
   .set-tabs{
-    display:flex;
+    display:grid;
+    grid-template-columns:repeat(3, 1fr); /* six tabs in two tidy rows, so they fit on a phone */
     gap:4px;
     padding:4px;
     margin-bottom:14px;
@@ -264,7 +265,6 @@
     border-radius:10px;
   }
   .set-tabs button{
-    flex:1;
     border:none;
     background:none;
     border-radius:7px;
