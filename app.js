@@ -269,7 +269,7 @@
     var s = document.getElementById('splash');
     if(!s) return;
     s.classList.add('gone');
-    setTimeout(function(){ s.remove(); if(!settings.tourDone) startTour(); }, 500);
+    setTimeout(function(){ s.remove(); maybeTour(); }, 500);
   }
 
   // ---------- noticing a streak, gently ----------
@@ -322,7 +322,13 @@
     { el: '#nightSkyBlock', title: 'Your night sky', text: 'Every good day lights a star. Fill all 88 constellations. Missed days never take a star away.' },
     { el: '#moreBtn', title: 'Make it yours', text: 'This menu holds Templates, Recurring and Settings: themes, repeating days, reminders and backups.' }
   ];
-  var tourBox = null, tourSteps = [], tourAt = 0;
+  var tourBox = null, tourSteps = [], tourAt = 0, settingsLoaded = false;
+
+  // Only once someone is signed in, their settings have loaded, and the logo screen has gone:
+  // never over the sign-in screen, and never from settings that failed to load.
+  function maybeTour(){
+    if(settingsLoaded && !settings.tourDone && !document.getElementById('splash') && document.getElementById('signIn').hidden) startTour();
+  }
 
   function startTour(){
     if(tourBox) return;
@@ -1850,6 +1856,8 @@
         if(settings.theme === 'original' && settings.dark) Object.assign(settings, THEMES.deepspace, { theme: 'deepspace' });
       }
       applySettings();
+      settingsLoaded = true; // really read (or really nothing saved yet), not a failed read
+      maybeTour();
     }).catch(function(){
       applySettings();
     }).then(function(){
@@ -2443,6 +2451,17 @@
         if(v && v.length === 2) consCache['plan:' + ds] = { done: v[0], total: v[1] };
       });
       renderConsistency(); // the summarised history is already enough to draw most of the grid
+      // Supabase storage can read every day in one request; otherwise read them one by one below
+      if(window.storage.getAll) return window.storage.getAll('plan:').then(function(all){
+        Object.keys(all).forEach(function(k){
+          if(consCache[k]) return;
+          try{
+            var arr = JSON.parse(all[k]);
+            consCache[k] = { total: arr.length, done: arr.filter(function(b){ return b.done; }).length };
+          }catch(e){}
+        });
+        return { keys: [] }; // nothing left to read one by one
+      });
       return window.storage.list('plan:');
     }).then(function(res){
       // only days still stored in full and not already covered by the summary; every year,

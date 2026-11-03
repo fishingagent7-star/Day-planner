@@ -280,6 +280,34 @@ if(!window.storage){
           }).then(function(){ return true; });
         });
       },
+      // Read every saved value whose key starts with `prefix`, in ONE request (instead of one
+      // per key). Gives back { key: value }. Offline: this device's copies.
+      // shortcut: like list(), at most 1000 rows; page with .range() if anyone could have more.
+      getAll: function(prefix){
+        prefix = prefix || '';
+        var pattern = prefix.replace(/[\\%_]/g, '\\$&') + '%';
+        return ready.then(function(){
+          return client.from(TABLE).select('key, value').like('key', pattern).then(check).then(function(rows){
+            var out = {};
+            rows.forEach(function(r){ out[r.key] = r.value; copy[r.key] = r.value; });
+            lists[prefix] = rows.map(function(r){ return r.key; });
+            saveLocal();
+            return out;
+          }, function(err){
+            if(!isOffline(err)) throw err;
+            var out = {};
+            Object.keys(copy).forEach(function(k){ if(k.indexOf(prefix) === 0) out[k] = copy[k]; });
+            return out;
+          });
+        }).then(function(out){
+          // changes still waiting to send are the newest
+          Object.keys(outbox).forEach(function(k){
+            if(k.indexOf(prefix) !== 0) return;
+            if(outbox[k].value === null) delete out[k]; else out[k] = outbox[k].value;
+          });
+          return out;
+        });
+      },
       // Find every saved key that starts with `prefix` (e.g. 'plan:' = all days).
       // Offline: the last list this device saw, plus anything it has a copy of.
       list: function(prefix){
