@@ -1773,9 +1773,17 @@
   var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924' };
 
   // Today's sunrise and sunset, in minutes after local midnight (NOAA's sun formula).
-  // shortcut: always Sydney's sun; ask for the user's location if other people use the app.
+  // The city comes from the device's time zone, so no location permission is needed.
+  // shortcut: Australian capitals and Auckland only; elsewhere gets an even ~6am-6pm sun (equator at
+  // the clock's own longitude). Add zones if overseas people join.
+  var SUN_CITIES = {
+    'Australia/Sydney': [-33.87, 151.21], 'Australia/Melbourne': [-37.81, 144.96], 'Australia/Brisbane': [-27.47, 153.03],
+    'Australia/Adelaide': [-34.93, 138.60], 'Australia/Perth': [-31.95, 115.86], 'Australia/Hobart': [-42.88, 147.33],
+    'Australia/Darwin': [-12.46, 130.84], 'Pacific/Auckland': [-36.85, 174.76]
+  };
+  var sunCity = SUN_CITIES[Intl.DateTimeFormat().resolvedOptions().timeZone] || [0, -new Date().getTimezoneOffset() / 4];
   function sunTimes(date){
-    var LAT = -33.87, LNG = 151.21, rad = Math.PI / 180;
+    var LAT = sunCity[0], LNG = sunCity[1], rad = Math.PI / 180;
     var dayOfYear = Math.round((new Date(date.getFullYear(), date.getMonth(), date.getDate()) - new Date(date.getFullYear(), 0, 0)) / 86400000);
     var g = 2 * Math.PI / 365 * (dayOfYear - 1);
     var eqTime = 229.18 * (0.000075 + 0.001868 * Math.cos(g) - 0.032077 * Math.sin(g) - 0.014615 * Math.cos(2 * g) - 0.040849 * Math.sin(2 * g));
