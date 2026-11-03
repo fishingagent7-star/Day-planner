@@ -2897,12 +2897,25 @@
   // The slide plays even with "reduce motion" on: the owner asked for it, and it's a small, gentle movement.
   var skyBlock = document.getElementById('nightSkyBlock');
   var skySvg = document.getElementById('nightSky');
+  var skyCol = document.getElementById('skyCollection');
   function toggleSky(){
-    var from = skySvg.getBoundingClientRect().height;
-    skyBlock.setAttribute('aria-expanded', skyBlock.classList.toggle('open'));
+    if(skyCol.getAnimations) skyCol.getAnimations().forEach(function(a){ a.cancel(); });
+    skyCol.style.display = ''; skyCol.style.overflow = '';
+    var from = skySvg.getBoundingClientRect().height, colFrom = skyCol.offsetHeight;
+    var opening = skyBlock.classList.toggle('open');
+    skyBlock.setAttribute('aria-expanded', opening);
     renderCollection();
-    var to = skySvg.getBoundingClientRect().height;
-    if(skySvg.animate) skySvg.animate([{ height: from + 'px' }, { height: to + 'px' }], { duration: 400, easing: 'ease-in-out' });
+    var to = skySvg.getBoundingClientRect().height, colTo = skyCol.offsetHeight;
+    if(!skySvg.animate) return;
+    var slide = { duration: 400, easing: 'ease-in-out' };
+    skySvg.animate([{ height: from + 'px' }, { height: to + 'px' }], slide);
+    // the collection slides and fades with it; while closing it stays shown until the slide ends
+    if(!opening) skyCol.style.display = 'grid';
+    skyCol.style.overflow = 'hidden';
+    skyCol.animate([
+      { height: colFrom + 'px', marginTop: opening ? '0px' : '12px', opacity: opening ? 0 : 1 },
+      { height: colTo + 'px', marginTop: opening ? '12px' : '0px', opacity: opening ? 1 : 0 }
+    ], slide).finished.then(function(){ skyCol.style.display = ''; skyCol.style.overflow = ''; }, function(){});
   }
   skyBlock.addEventListener('click', toggleSky);
   // browsing the collection shouldn't close the sky
