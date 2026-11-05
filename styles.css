@@ -900,10 +900,10 @@
      app.js puts the chosen theme on <body data-theme="...">. Colours set on
      body here win over the plain light/dark ones app.js sets on <html>. */
 
-  /* Daybreak: the sky just after dawn, navy ink and a gold "now" line */
+  /* Daybreak: the sky just after dawn, navy ink and a coral "now" line (gold is kept for "done") */
   body[data-theme="daybreak"]{
     --ink:#1b2a4a; --ink-soft:#5d6a86; --line:#d8deea; --line-strong:#aab4c8;
-    --surface:#ffffff; --surface-alt:#f8f9fc; --now:#d4a72c; --now-text:#86660f;
+    --surface:#ffffff; --surface-alt:#f8f9fc; --now:#d9534f; --now-text:#b8403b;
   }
 
   /* Twilight: dusk lavender, a coral "now" line, rounder buttons */
@@ -917,8 +917,8 @@
   /* Deep Space: the logo's night blue and gold */
   body[data-theme="deepspace"]{
     --ink:#e6eaf4; --ink-soft:#97a3bf; --line:#26324d; --line-strong:#46557a;
-    --surface:#1b2a4a; --surface-alt:#16223d; --now:#f2d27a;
-    --faint:#a9a498; --faint-icon:#c7c0b0; --now-text:#f2d27a;
+    --surface:#1b2a4a; --surface-alt:#16223d; --now:#f0857b;
+    --faint:#a9a498; --faint-icon:#c7c0b0; --now-text:#f0857b;
   }
 
   /* Nebula: deep violet with lilac and pink, rounder buttons */
@@ -997,25 +997,25 @@
   .tour{position:fixed;inset:0;z-index:150;}
   .tour-dim{position:absolute;inset:0;} /* catches clicks so the page can't be used mid-tour */
   .tour.shade .tour-dim{background:rgba(10,16,34,.62);}
-  .tour-ring{position:fixed;border-radius:10px;box-shadow:0 0 0 4px #f2d27a, 0 0 0 9999px rgba(10,16,34,.62);pointer-events:none;}
+  .tour-ring{position:fixed;border-radius:10px;box-shadow:0 0 0 4px #ffffff, 0 0 0 9999px rgba(10,16,34,.62);pointer-events:none;}
   .tour-card{position:fixed;left:50%;transform:translateX(-50%);width:min(360px, calc(100vw - 32px));box-sizing:border-box;padding:20px;border-radius:14px;background:#1b2a4a;color:#ffffff;display:flex;flex-direction:column;gap:12px;box-shadow:0 16px 40px rgba(0,0,0,.35);font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;}
   .tour-top{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:#c9d2ea;}
   .tour-card h2{margin:0;font-family:Georgia, 'Iowan Old Style', serif;font-weight:400;font-size:22px;line-height:1.25;}
   .tour-card p{margin:0;font-size:15px;line-height:1.5;color:#dfe5f3;}
   .tour-dots{display:flex;gap:6px;}
   .tour-dots span{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.3);}
-  .tour-dots span.on{background:#f2d27a;}
+  .tour-dots span.on{background:#ffffff;}
   .tour-actions{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .tour-actions span{display:flex;gap:8px;}
   .tour-card button{min-height:44px;font:inherit;font-size:15px;border-radius:8px;cursor:pointer;}
   .tour-card .tour-skip{border:none;background:none;color:#c9d2ea;text-decoration:underline;padding:0 4px;}
-  .tour-card .tour-back{border:1px solid #f2d27a;background:transparent;color:#f2d27a;padding:0 16px;}
-  .tour-card .tour-next{border:none;background:#f2d27a;color:#141c30;font-weight:600;padding:0 18px;}
+  .tour-card .tour-back{border:1px solid #ffffff;background:transparent;color:#ffffff;padding:0 16px;}
+  .tour-card .tour-next{border:none;background:#ffffff;color:#141c30;font-weight:600;padding:0 18px;}
   .tour-card button:focus-visible{outline:2px solid #ffffff;outline-offset:2px;}
   /* stronger than the app's general button:hover, which would turn Next pale when the card moves under the mouse */
   .tour-card .tour-skip:hover{background:none;color:#ffffff;}
-  .tour-card .tour-back:hover{background:rgba(242,210,122,.12);border-color:#f2d27a;}
-  .tour-card .tour-next:hover{background:#f7de97;}
+  .tour-card .tour-back:hover{background:rgba(255,255,255,.12);border-color:#ffffff;}
+  .tour-card .tour-next:hover{background:#e3e8f4;}
 
   /* the little star that floats up when a block is ticked (app.js tickStar) */
   .tick-star{position:fixed;z-index:60;pointer-events:none;filter:drop-shadow(0 0 4px rgba(242,210,122,.8));}
