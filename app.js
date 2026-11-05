@@ -2147,7 +2147,8 @@
       // the backup is about to replace saved days: drop any edit still waiting to be written
       pendingSaves = {};
       clearTimeout(saveTimer);
-      var dayKeys = data.days ? Object.keys(data.days) : [];
+      // only real day keys: a tampered file must not be able to write anything else (e.g. reminder addresses)
+      var dayKeys = data.days ? Object.keys(data.days).filter(function(k){ return /^plan:\d{4}-\d{2}-\d{2}$/.test(k); }) : [];
       importStatus.textContent = 'Restoring ' + dayKeys.length + ' day' + (dayKeys.length === 1 ? '' : 's') + '…';
       var succeeded = 0, failed = 0;
 
@@ -2166,7 +2167,7 @@
 
       // which recurring rules each day already got (older backups don't have this)
       var applied = data.recurapplied || {};
-      var appliedKeys = Object.keys(applied);
+      var appliedKeys = Object.keys(applied).filter(function(k){ return /^recurapplied:\d{4}-\d{2}-\d{2}$/.test(k); });
       function writeApplied(idx){
         if(idx >= appliedKeys.length) return Promise.resolve();
         return window.storage.set(appliedKeys[idx], applied[appliedKeys[idx]]).catch(function(){}).then(function(){
