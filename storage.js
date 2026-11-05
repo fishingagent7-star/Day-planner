@@ -51,10 +51,12 @@ if(!window.storage){
       function setMode(c){
         creating = c;
         document.getElementById('signInBtn').textContent = c ? 'Create account' : 'Sign in';
-        document.getElementById('signInIntro').textContent = c ? 'Make an account with your email and a password (at least 6 characters).' : 'Sign in to see your days on any device.';
+        document.getElementById('signInIntro').textContent = c ? 'Make an account with your email and a password: at least 8 characters, with a capital letter, a small letter and a number.' : 'Sign in to see your days on any device.';
         document.getElementById('signInSwitchText').textContent = c ? 'Already have an account?' : 'New here?';
         document.getElementById('signInSwitch').textContent = c ? 'Sign in' : 'Create an account';
         passwordInput.autocomplete = c ? 'new-password' : 'current-password';
+        // the 8-character rule (Supabase → Auth) is for new passwords only: older, shorter ones still sign in
+        passwordInput.minLength = c ? 8 : 0;
         document.getElementById('forgotLine').hidden = c;
         // the terms say 13+, so creating an account asks (required only while it's showing)
         document.getElementById('ageLine').hidden = !c;
@@ -93,9 +95,10 @@ if(!window.storage){
         emailInput.parentNode.hidden = true;
         document.getElementById('signInSwitchText').parentNode.hidden = true;
         document.getElementById('forgotLine').hidden = true;
-        document.getElementById('signInIntro').textContent = 'Choose a new password (at least 6 characters).';
+        document.getElementById('signInIntro').textContent = 'Choose a new password: at least 8 characters, with a capital letter, a small letter and a number.';
         document.getElementById('signInBtn').textContent = 'Save new password';
         passwordInput.autocomplete = 'new-password';
+        passwordInput.minLength = 8;
         passwordInput.value = '';
         say('');
         box.hidden = false;
