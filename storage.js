@@ -56,6 +56,9 @@ if(!window.storage){
         document.getElementById('signInSwitch').textContent = c ? 'Sign in' : 'Create an account';
         passwordInput.autocomplete = c ? 'new-password' : 'current-password';
         document.getElementById('forgotLine').hidden = c;
+        // the terms say 13+, so creating an account asks (required only while it's showing)
+        document.getElementById('ageLine').hidden = !c;
+        document.getElementById('ageCheck').required = c;
         say('');
       }
       document.getElementById('signInSwitch').addEventListener('click', function(){ setMode(!creating); });

@@ -857,7 +857,7 @@
     if(blocks.length === 0){
       var empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'Nothing planned yet — press N or hit + Add block to get started.';
+      empty.textContent = 'A fresh day. Tap + Add block to plan your first thing.';
       track.appendChild(empty);
       restoreScroll();
       return;
@@ -1371,14 +1371,14 @@
       deleteTemplateBtn.classList.add('armed');
       deleteArmTimer = setTimeout(function(){
         deleteArmed = false;
-        deleteTemplateBtn.textContent = 'Delete';
+        deleteTemplateBtn.textContent = 'Delete template';
         deleteTemplateBtn.classList.remove('armed');
       }, 3000);
       return;
     }
     clearTimeout(deleteArmTimer);
     deleteArmed = false;
-    deleteTemplateBtn.textContent = 'Delete';
+    deleteTemplateBtn.textContent = 'Delete template';
     deleteTemplateBtn.classList.remove('armed');
     delete templates[name];
     saveTemplatesToStorage().then(function(){
@@ -1625,7 +1625,7 @@
       var empty = document.createElement('p');
       empty.className = 'sub';
       empty.style.margin = '4px 0';
-      empty.textContent = 'No auto-applied templates yet.';
+      empty.textContent = 'No repeating templates yet.';
       recurList.appendChild(empty);
       return;
     }

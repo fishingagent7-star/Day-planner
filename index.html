@@ -4,6 +4,16 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lodestar</title>
+<!-- What a shared link shows (Messages, Instagram, Facebook…). The picture needs the full address. -->
+<meta name="description" content="A calm, free day planner that's kind about missed days. Every good day lights a star.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://lodestarplanner.netlify.app/">
+<meta property="og:title" content="Lodestar: plan your day, collect the sky">
+<meta property="og:description" content="A calm, free day planner that's kind about missed days. Every good day lights a star.">
+<meta property="og:image" content="https://lodestarplanner.netlify.app/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <script>
   // Lodestar moved to Netlify; send anyone on the old GitHub address there.
   if(location.hostname === 'fishingagent7-star.github.io') location.replace('https://lodestarplanner.netlify.app/' + location.hash);
@@ -88,7 +98,7 @@
       </div>
     </div>
     <button class="primary" id="addBtn" title="Shortcut: N">+ Add block</button>
-    <button id="sortBtn" title="Shortcut: S">Sort</button>
+    <button id="sortBtn" title="Shortcut: S">Sort by time</button>
   </div>
 
   <div class="toolbar" id="quickAddRow" style="display:none;">
@@ -211,7 +221,7 @@
       <div class="toolbar">
         <select id="recurTemplateSelect"></select>
         <div class="weekday-picker" id="recurWeekdayPicker"></div>
-        <button class="primary" id="addRecurBtn">+ Auto-apply</button>
+        <button class="primary" id="addRecurBtn">Repeat on these days</button>
       </div>
       <div id="recurList"></div>
     </div>
@@ -220,12 +230,12 @@
   <div class="panel" id="templatesPanel" style="display:none;">
     <div class="toolbar">
       <input id="templateNameInput" type="text" placeholder="Template name">
-      <button id="saveTemplateBtn">Save current day</button>
+      <button id="saveTemplateBtn">Save day as template</button>
     </div>
     <div class="toolbar">
       <select id="templateSelect"></select>
-      <button id="applyTemplateBtn">Apply</button>
-      <button class="danger" id="deleteTemplateBtn">Delete</button>
+      <button id="applyTemplateBtn">Add to this day</button>
+      <button class="danger" id="deleteTemplateBtn">Delete template</button>
     </div>
     <p class="sub" id="templateStatus"></p>
   </div>
@@ -242,6 +252,7 @@
     <p class="sign-in-note" id="signInIntro">Sign in to see your days on any device.</p>
     <label>Email <input type="email" id="signInEmail" autocomplete="email" required></label>
     <label>Password <input type="password" id="signInPassword" autocomplete="current-password" minlength="6" required></label>
+    <label class="age-check" id="ageLine" hidden><input type="checkbox" id="ageCheck"> I'm 13 or older</label>
     <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxtie3rf7LCjRg9" data-appearance="interaction-only"></div>
     <button type="submit" class="primary" id="signInBtn">Sign in</button>
     <p class="sign-in-note" id="signInMsg" role="status"></p>
