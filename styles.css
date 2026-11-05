@@ -984,6 +984,13 @@
   .sky-link{stroke:#8fa7d8;stroke-opacity:.45;stroke-width:1.5;}
   .sky-link.complete{stroke-opacity:.95;stroke-width:2.2;}
   .sky-name{fill:#a9b2c9;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:18px;text-anchor:middle;}
+  /* bonus rewards (10/50/100 good days) are gold: they're "done" moments */
+  .sky-star.bonus{fill:#f2d27a;}
+  .sky-link.bonus{stroke:#f2d27a;stroke-opacity:.5;stroke-width:1.6;}
+  .sky-name.bonus{fill:#e9cf86;}
+  .lodestar-halo{fill:#f2d27a;opacity:.12;}
+  .sky-tile.bonus.got{outline:1px solid rgba(242,210,122,.6);}
+  .sky-tile.bonus:not(.got) > span{opacity:1;} /* not yet: the picture stays faint, the progress stays readable */
   .sky-star.fresh{animation:sky-pop .8s ease-out both;transform-box:fill-box;transform-origin:center;}
   @keyframes sky-pop{0%{opacity:0;transform:scale(.2)} 60%{opacity:1;transform:scale(1.9)} 100%{transform:scale(1)}}
   @keyframes sky-twinkle{0%,100%{opacity:.9} 50%{opacity:.25}}

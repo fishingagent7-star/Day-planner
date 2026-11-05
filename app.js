@@ -2779,6 +2779,35 @@
     });
   }
 
+  // ---------- bonus sky: rewards for TOTAL good days, kept for ever ----------
+  // 10: a comet starts visiting (skyEvent). 50: the Southern Crown (Corona Australis, a real
+  // arc of stars seen from Australia). 100: the Lodestar (Polaris, where the app's name comes from).
+  var bonusGood = 0; // good days so far, set by renderNightSky
+  var BONUSES = [
+    { at: 10, name: 'The comet', note: 'A comet now visits your sky now and then' },
+    { at: 50, name: 'Southern Crown', note: 'The Southern Crown joins your sky' },
+    { at: 100, name: 'The Lodestar', note: 'The Lodestar now shines above your sky' }
+  ];
+  var CROWN = [[205,312],[228,290],[256,276],[288,272],[320,278],[344,294],[360,316]]; // in sky units (1000 x 380)
+  function drawCrown(parent, scale, dx, dy){
+    function pt(s){ return [s[0] * scale + dx, s[1] * scale + dy]; }
+    for(var i = 1; i < CROWN.length; i++){
+      var a = pt(CROWN[i - 1]), b = pt(CROWN[i]);
+      svgEl('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], 'class': 'sky-link bonus' }, parent);
+    }
+    CROWN.forEach(function(s, i){ var p = pt(s); svgEl('circle', { cx: p[0], cy: p[1], r: (i === 3 ? 5 : 3.6) * Math.max(scale, 0.6), filter: 'url(#skyGlow)', 'class': 'sky-star bonus' }, parent); });
+  }
+  function drawLodestar(parent, x, y, size){
+    var s = size, q = s * 0.18;
+    svgEl('circle', { cx: x, cy: y, r: s * 2.4, 'class': 'lodestar-halo' }, parent);
+    svgEl('path', { d: 'M' + x + ' ' + (y - s) + ' Q' + (x + q) + ' ' + (y - q) + ' ' + (x + s) + ' ' + y + ' Q' + (x + q) + ' ' + (y + q) + ' ' + x + ' ' + (y + s) +
+      ' Q' + (x - q) + ' ' + (y + q) + ' ' + (x - s) + ' ' + y + ' Q' + (x - q) + ' ' + (y - q) + ' ' + x + ' ' + (y - s) + ' Z', filter: 'url(#skyGlow)', 'class': 'sky-star bonus lodestar' }, parent);
+  }
+  function drawCometIcon(parent){
+    svgEl('path', { d: 'M18 74 Q48 56 70 36 L73 40 Q52 62 20 78 Z', fill: 'url(#meteorGrad)', opacity: 0.8 }, parent);
+    svgEl('circle', { cx: 72, cy: 37, r: 5, fill: '#fffbe8', filter: 'url(#skyGlow)' }, parent);
+  }
+
   // ---------- sky colours through the day ----------
   // The sky follows Sydney's real sunrise and sunset (sunTimes): a pale glow at dawn,
   // calm deep blue by day, pink and orange at sunset, full dark at night. It never gets
@@ -2871,6 +2900,19 @@
     });
     drawConstellation(con, [355, 30, 290], lit, false, pop ? lit - 1 : -1, g);
 
+    bonusGood = p.earned;
+    if(bonusGood >= 50){
+      drawCrown(g, 1, 0, 0);
+      svgEl('text', { x: 283, y: 350, 'class': 'sky-name bonus' }, g).textContent = 'Southern Crown';
+    }
+    if(bonusGood >= 100){
+      drawLodestar(g, 735, 70, 16);
+      svgEl('text', { x: 735, y: 115, 'class': 'sky-name bonus' }, g).textContent = 'The Lodestar';
+    }
+    var nextBonus = BONUSES.filter(function(b){ return bonusGood < b.at; })[0];
+    // the day a bonus is reached, say so (in the same quiet line as the welcome star)
+    var reached = !consLoading && p.todayGood && BONUSES.filter(function(b){ return b.at === bonusGood; })[0];
+
     var done = collected.length + (lit >= con.stars.length ? 1 : 0); // a finished one counts straight away
     var goal = { 0.5: 'half', 0.75: 'three quarters', 1: 'all' }[settings.goodDay] || 'half';
     var line = lit < con.stars.length ? '<b>' + con.name + '</b> · ' + lit + ' of ' + con.stars.length + ' stars'
@@ -2880,9 +2922,11 @@
     // what a screen reader says for the sky panel (it's a button)
     document.getElementById('nightSkyBlock').setAttribute('aria-label', 'Night sky: ' + line.replace(/<[^>]+>/g, ''));
     document.getElementById('nightSkyCaption').innerHTML = line +
-      '<span class="sky-hint"> · Tap to open</span>' + (welcome || eveningNote()) +
+      '<span class="sky-hint"> · Tap to open</span>' +
+      (reached ? '<span class="sky-evening">' + bonusGood + ' good days. ' + reached.note + ' ✦</span>' : welcome || eveningNote()) +
       '<span class="sky-more"> · ' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
       '<br>A star for every day you finish ' + goal + ' of your blocks.' +
+      (nextBonus ? ' Next bonus: ' + nextBonus.name.replace(/^The /, 'the ') + ' at ' + nextBonus.at + ' good days (' + bonusGood + ' so far).' : '') +
       (consLoading ? ' Counting your days…' : '') + '</span>';
     skyState = { collected: done, focus: focus, lit: lit };
     renderCollection();
@@ -2895,10 +2939,24 @@
   function renderCollection(){
     var wrap = document.getElementById('skyCollection');
     if(!skyState || !skyBlock.classList.contains('open')) return;
-    var sig = skyState.collected + ':' + skyState.focus + ':' + skyState.lit;
+    var sig = skyState.collected + ':' + skyState.focus + ':' + skyState.lit + ':' + bonusGood;
     if(sig === collectionDrawn) return; // nothing changed since last time
     collectionDrawn = sig;
     wrap.textContent = '';
+    // the three bonus rewards come first: collected, or how far along
+    BONUSES.forEach(function(b, i){
+      var got = bonusGood >= b.at;
+      var tile = document.createElement('div');
+      tile.className = 'sky-tile bonus' + (got ? ' got' : '');
+      var svg = svgEl('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' }, tile);
+      if(i === 0) drawCometIcon(svg);
+      else if(i === 1) drawCrown(svg, 0.42, -68, -72);
+      else drawLodestar(svg, 50, 50, 22);
+      var label = document.createElement('span');
+      label.textContent = b.name + ' · ' + (got ? 'collected' : Math.min(bonusGood, b.at) + '/' + b.at);
+      tile.appendChild(label);
+      wrap.appendChild(tile);
+    });
     CONSTELLATIONS.forEach(function(con, i){
       var got = i < skyState.collected, now = i === skyState.focus && !got;
       var tile = document.createElement('div');
@@ -2954,7 +3012,7 @@
     if(!settings.showNightSky || document.hidden || !skyFx.animate) return;
     var open = skyBlock.classList.contains('open');
     var top = open ? 30 : 165, bottom = open ? 320 : 215; // closed, only a thin middle band of the picture shows
-    if(!cometShowing && Math.random() < 1 / 50){ comet(open, top, bottom); return; } // rare: about once every 8 minutes
+    if(!cometShowing && bonusGood >= 10 && Math.random() < 1 / 12){ comet(open, top, bottom); return; } // a bonus from 10 good days: about every 2 minutes
     if(!satelliteCrossing && Math.random() < 0.25){ satellite(open, top, bottom); return; }
     var x = 150 + Math.random() * 700, y = top + Math.random() * (bottom - top);
     // open: any direction; closed: mostly sideways, or it would cross the thin strip in a blink
