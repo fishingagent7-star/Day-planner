@@ -186,7 +186,7 @@
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){
       el.classList.remove('show');
-    }, ms || 1800);
+    }, ms || Math.max(1800, text.length * 55)); // longer messages stay up long enough to read
   }
 
   function updateLastSaved(){
@@ -461,7 +461,9 @@
       });
     }, Promise.resolve()).then(function(){
       if(failed){
-        setStatus('Could not save');
+        setStatus('Couldn’t save just now. Trying again in a few seconds, so keep Lodestar open.');
+        clearTimeout(saveTimer);
+        saveTimer = setTimeout(flushSaves, 10000); // don't wait for the next edit to retry
       } else if(Object.keys(pendingSaves).length === 0){
         updateLastSaved();
         hasUnsavedChanges = false;
@@ -727,7 +729,7 @@
         loadDay();
       }
     }).catch(function(){
-      setStatus('Could not copy block');
+      setStatus('Couldn’t copy the block. Check your internet connection, then try again.');
     });
   }
 
@@ -1252,7 +1254,7 @@
 
   function saveTemplatesToStorage(){
     return window.storage.set('templates', JSON.stringify(templates)).catch(function(){
-      setTemplateStatus('Could not save template');
+      setTemplateStatus('Couldn’t save the template. Check your internet connection, then try again.');
     });
   }
 
@@ -1336,7 +1338,7 @@
   applyTemplateBtn.addEventListener('click', function(){
     var name = templateSelect.value;
     if(!name || !templates[name]){
-      setTemplateStatus('No template selected');
+      setTemplateStatus('Pick a template from the list first');
       return;
     }
     templates[name].forEach(function(t){
@@ -1353,7 +1355,7 @@
     sortBlocks();
     saveDay();
     renderDay();
-    setTemplateStatus('Applied "' + name + '"');
+    setTemplateStatus('Added "' + name + '" to this day');
   });
 
   var deleteArmed = false;
@@ -1362,7 +1364,7 @@
     if(!templatesReady()) return;
     var name = templateSelect.value;
     if(!name || !templates[name]){
-      setTemplateStatus('No template selected');
+      setTemplateStatus('Pick a template from the list first');
       return;
     }
     if(!deleteArmed){
@@ -1403,13 +1405,13 @@
     prevDate.setDate(current.getDate() - 1);
     flushSaves().then(function(){ return safeGet(dateKey(prevDate)); }).then(function(res){
       if(!res || !res.value){
-        setStatus('No data found for the previous day');
+        setStatus('Nothing to copy: the previous day has no plan.');
         return;
       }
       var prevBlocks;
       try{ prevBlocks = JSON.parse(res.value); }catch(e){ return; }
       if(!prevBlocks.length){
-        setStatus('Previous day was empty');
+        setStatus('Nothing to copy: the previous day was empty.');
         return;
       }
       prevBlocks.forEach(function(t){
@@ -1427,7 +1429,7 @@
       saveDay();
       renderDay();
     }).catch(function(){
-      setStatus('Could not load previous day');
+      setStatus('Couldn’t load the previous day. Check your internet connection, then try again.');
     });
   });
 
@@ -2126,7 +2128,7 @@
         }).catch(function(){});
       });
     }).catch(function(err){
-      importStatus.textContent = 'Could not export: ' + (err && err.message ? err.message : 'unknown error');
+      importStatus.textContent = 'Couldn’t make the backup. Check your internet connection, then try again.';
     });
   });
 
@@ -3062,7 +3064,7 @@
     if(consLoadError){
       var note = document.createElement('p');
       note.className = 'summary-row-title cons-note';
-      note.textContent = 'Couldn\'t load all history (' + consLoadError + '). Toggle the grid off and on to retry.';
+      note.textContent = 'Couldn’t load all your past days. Check your internet, then reload the page to try again.';
       wrap.appendChild(note);
     }
 
