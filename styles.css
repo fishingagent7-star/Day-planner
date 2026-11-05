@@ -1,3 +1,7 @@
+  /* The two web fonts live in fonts/ (not Google's servers, which would see every visitor's
+     address). One file per font covers every weight. */
+  @font-face{font-family:'DM Sans';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/dm-sans.woff2) format('woff2');}
+  @font-face{font-family:'Nunito';font-style:normal;font-weight:400 700;font-display:swap;src:url(fonts/nunito.woff2) format('woff2');}
   :root{
     --ink:#1f2a24;
     --ink-soft:#5b6b60;

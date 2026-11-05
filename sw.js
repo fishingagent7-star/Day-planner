@@ -9,14 +9,14 @@
 
 // Change this line whenever the site's safety settings (_headers) change: the browser only
 // re-fetches the helper, with the new settings, when this file's text changes.
-var HELPER_VERSION = '2026-11-03e';
+var HELPER_VERSION = '2026-11-05a';
 var FILES = 'lodestar-files';
-// outside files the app needs to open: the sign-in library and the fonts (not Supabase data)
-var OTHER_HOSTS = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
+// outside files the app needs to open: the sign-in library (not Supabase data)
+var OTHER_HOSTS = ['cdn.jsdelivr.net'];
 
 // Save the files Lodestar needs to open as soon as the helper arrives, so it works
 // offline after just one visit (not only after the second).
-var CORE = ['./', 'styles.css', 'app.js', 'storage.js', 'sw.js', 'icon.svg', 'apple-touch-icon.png',
+var CORE = ['./', 'styles.css', 'app.js', 'storage.js', 'sw.js', 'icon.svg', 'apple-touch-icon.png', 'fonts/dm-sans.woff2', 'fonts/nunito.woff2',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js'];
 self.addEventListener('install', function(e){
   self.skipWaiting();
