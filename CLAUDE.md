@@ -28,6 +28,8 @@ All values are JSON strings. Keys:
 
 Reminders: `sw.js` shows them; `supabase/functions/send-reminders` (Supabase Edge Function, run every minute by a Cron job, JWT check off) sends them. Its secret `VAPID_PRIVATE_KEY` lives only in Supabase secrets and the git-ignored `secrets/` folder. The table needed `grant ... to service_role` for the sender to read it.
 
+Error reports: `storage.js` (`reportError`) saves anonymous notes `{message, source, device}` to the Supabase table `errors` (made by `supabase/errors-table.sql`; insert-only for signed-in users, no account link, deleted after 30 days by a Cron job). Max 5 per visit. The privacy policy describes this.
+
 Spam guard: Cloudflare Turnstile on the sign-in screen (public site key in index.html, sends `captchaToken` with sign-in, sign-up and password reset). Its secret key lives only in Supabase → Authentication → Attack Protection (CAPTCHA).
 
 API: `get(key)` returns `{key, value}` (may return null OR throw when the key is missing), `set(key, value)`, `delete(key)`, `list(prefix)` returns `{keys}`. Writes were rate-limited, so they are done one at a time.

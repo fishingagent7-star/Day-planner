@@ -330,6 +330,25 @@ if(!window.storage){
     window.addEventListener('offline', showNote);
     setInterval(function(){ if(Object.keys(outbox).length) sync(); }, 30000);
 
+    // Error reports: when something breaks, save a short anonymous note to the `errors` table
+    // (supabase/errors-table.sql) so it can be fixed. Never the plans, email or account.
+    // At most 5 per visit, no repeats, and only when signed in and online.
+    var reported = [];
+    function reportError(message, source){
+      message = String(message || 'Unknown error').slice(0, 500);
+      if(!client || !userId || !navigator.onLine || reported.length >= 5 || reported.indexOf(message) !== -1) return;
+      reported.push(message);
+      client.from('errors').insert({ message: message, source: String(source || '').slice(0, 300), device: navigator.userAgent.slice(0, 300) })
+        .then(function(){}, function(){}); // a report that fails is simply dropped
+    }
+    window.addEventListener('error', function(e){
+      if(e.message) reportError(e.message, (e.filename || '').split('/').pop() + ':' + e.lineno);
+    });
+    window.addEventListener('unhandledrejection', function(e){
+      var r = e.reason;
+      reportError(r && r.message || r, r && r.stack ? String(r.stack).split('\n')[1] : '');
+    });
+
     window.storage = {
       // Read one saved value. Gives back null if nothing is saved there.
       // Offline: this device's copy, or an error if it never had one.
