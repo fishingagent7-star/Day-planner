@@ -2734,7 +2734,8 @@
       var v = consCache[k];
       return k.slice(5) <= today && v && v.total > 0 && v.done / v.total >= settings.goodDay;
     });
-    return { stars: good.length, todayGood: good.indexOf('plan:' + today) !== -1 };
+    // +1: everyone starts with a welcome star, so the sky never opens at "0 of 5"
+    return { stars: good.length + 1, earned: good.length, todayGood: good.indexOf('plan:' + today) !== -1 };
   }
 
   function svgEl(tag, attrs, parent){
@@ -2863,8 +2864,9 @@
     var line = lit < con.stars.length ? '<b>' + con.name + '</b> · ' + lit + ' of ' + con.stars.length + ' stars'
       : focus === CONSTELLATIONS.length - 1 ? '<b>Your sky is complete!</b> All 88 constellations collected.'
       : '<b>' + con.name + ' complete!</b> It joins your sky tomorrow.';
+    var welcome = p.earned === 0 && !consLoading ? '<span class="sky-evening">Your first star is a welcome gift, for showing up ✦</span>' : '';
     document.getElementById('nightSkyCaption').innerHTML = line +
-      '<span class="sky-hint"> · Tap to open</span>' + eveningNote() +
+      '<span class="sky-hint"> · Tap to open</span>' + (welcome || eveningNote()) +
       '<span class="sky-more"> · ' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
       '<br>A star for every day you finish ' + goal + ' of your blocks.' +
       (consLoading ? ' Counting your days…' : '') + '</span>';
@@ -3037,8 +3039,10 @@
 
     var title = document.createElement('p');
     title.className = 'summary-row-title';
-    title.textContent = totalDone + ' block' + (totalDone === 1 ? '' : 's') + ' completed in ' + year
-      + (consLoading ? ' \u00b7 loading history\u2026' : '');
+    // no zeros on day one: a fresh year reads as a start, not a score
+    title.textContent = consLoading ? 'Loading history\u2026'
+      : totalDone === 0 ? 'Your ' + year + ' starts here'
+      : totalDone + ' block' + (totalDone === 1 ? '' : 's') + ' completed in ' + year;
     head.appendChild(title);
 
     var st = computeStreaks();
@@ -3051,7 +3055,7 @@
     streak.appendChild(document.createTextNode('Streak: '));
     streak.appendChild(cur);
     streak.appendChild(document.createTextNode(' \u00b7 best ' + st.best));
-    head.appendChild(streak);
+    if(st.best > 0) head.appendChild(streak); // shown from the first good day on
     wrap.appendChild(head);
 
     if(consLoadError){
