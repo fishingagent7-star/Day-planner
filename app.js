@@ -1723,8 +1723,8 @@
   // ---------- day and night colours ----------
   // The Original look's light and dark colours. Dark mode uses the dark set;
   // "Darken at sunset" switches to it at sunset (gliding over 5 seconds) and back at sunrise.
-  var LIGHT = { '--ink':'#1f2a24', '--ink-soft':'#5b6b60', '--line':'#d9d4c6', '--line-strong':'#b9b2a0', '--surface':'#ffffff', '--surface-alt':'#fbfaf6' };
-  var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924' };
+  var LIGHT = { '--ink':'#1f2a24', '--ink-soft':'#5b6b60', '--line':'#d9d4c6', '--line-strong':'#b9b2a0', '--surface':'#ffffff', '--surface-alt':'#fbfaf6', '--faint':'#625e56', '--faint-icon':'#7f7a6f', '--now-text':'#b8403b' };
+  var DARK  = { '--ink':'#eceae4', '--ink-soft':'#a9a89f', '--line':'#3a3d38', '--line-strong':'#54574f', '--surface':'#2a2d28', '--surface-alt':'#262924', '--faint':'#a9a498', '--faint-icon':'#c7c0b0', '--now-text':'#e9827e' };
 
   // Today's sunrise and sunset, in minutes after local midnight (NOAA's sun formula).
   // The city comes from the device's time zone, so no location permission is needed.

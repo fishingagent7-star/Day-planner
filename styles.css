@@ -13,6 +13,8 @@
     --warn:#b5562f;
     --warn-soft:#f6e6dd;
     --now:#d9534f;
+    /* small labels and icons: soft, but still readable (WCAG 4.5:1 text, 3:1 icons) */
+    --faint:#625e56; --faint-icon:#7f7a6f; --now-text:#b8403b;
     --font-body: Georgia, 'Iowan Old Style', serif;
     --surface:#ffffff;
     --surface-alt:#fbfaf6;
@@ -98,7 +100,7 @@
   .mini-timeline-empty{
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:10.5px;
-    color:#a9a498;
+    color:var(--faint);
     line-height:10px;
     padding-left:2px;
   }
@@ -322,7 +324,7 @@
   }
   .recur-row:last-child{border-bottom:none;}
   .recur-row .recur-info{flex:1;}
-  .recur-row .recur-days{color:#a9a498;font-size:11px;}
+  .recur-row .recur-days{color:var(--faint);font-size:11px;}
   .setting-label{
     display:flex;
     align-items:center;
@@ -574,7 +576,7 @@
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:10px;
     font-weight:600;
-    color:var(--now);
+    color:var(--now-text);
   }
   .block.current{background:var(--accent-soft);}
   .block.current::before{background:var(--accent);}
@@ -611,7 +613,7 @@
     flex-shrink:0;
   }
   .drag-handle{
-    color:#c7c0b0;
+    color:var(--faint-icon);
     font-size:14px;
     padding:4px 2px;
     align-self:flex-start;
@@ -657,7 +659,7 @@
   .dur-step{
     background:none;
     border:none;
-    color:#a9a498;
+    color:var(--faint);
     font-size:11px;
     line-height:1;
     padding:2px 3px;
@@ -671,7 +673,7 @@
     background:transparent;
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:11px;
-    color:#a9a498;
+    color:var(--faint);
     padding:1px 0;
     -moz-appearance:textfield;
     appearance:textfield;
@@ -684,7 +686,7 @@
   .duration-row span{
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:11px;
-    color:#a9a498;
+    color:var(--faint);
   }
   .end-time-row{
     display:flex;
@@ -695,7 +697,7 @@
   .end-arrow{
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:11px;
-    color:#a9a498;
+    color:var(--faint);
   }
   .end-time-input{
     width:58px;
@@ -704,7 +706,7 @@
     background:transparent;
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:11px;
-    color:#a9a498;
+    color:var(--faint);
     padding:1px 0;
   }
   .end-time-input:focus{
@@ -721,7 +723,7 @@
     color:var(--ink);
     padding:2px 0;
   }
-  .content input.title::placeholder{color:#a9a498;}
+  .content input.title::placeholder{color:var(--faint);}
   .content input.title:focus,
   .time-col input:focus,
   .content textarea:focus{
@@ -760,7 +762,7 @@
   .remove-btn{
     background:none;
     border:none;
-    color:#c7c0b0;
+    color:var(--faint-icon);
     font-size:18px;
     line-height:1;
     padding:4px 6px;
@@ -868,7 +870,7 @@
   .status{
     font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     font-size:11px;
-    color:#a9a498;
+    color:var(--faint);
     margin-top:24px;
     margin-left:82px;
   }
@@ -901,13 +903,13 @@
   /* Daybreak: the sky just after dawn, navy ink and a gold "now" line */
   body[data-theme="daybreak"]{
     --ink:#1b2a4a; --ink-soft:#5d6a86; --line:#d8deea; --line-strong:#aab4c8;
-    --surface:#ffffff; --surface-alt:#f8f9fc; --now:#d4a72c;
+    --surface:#ffffff; --surface-alt:#f8f9fc; --now:#d4a72c; --now-text:#86660f;
   }
 
   /* Twilight: dusk lavender, a coral "now" line, rounder buttons */
   body[data-theme="twilight"]{
     --ink:#2b2340; --ink-soft:#6d6384; --line:#dcd3e3; --line-strong:#b5a8c4;
-    --surface:#f8f5fa; --surface-alt:#f4f0f6; --now:#e08a6c;
+    --surface:#f8f5fa; --surface-alt:#f4f0f6; --now:#e08a6c; --now-text:#a84a2b;
   }
   body[data-theme="twilight"] button,
   body[data-theme="twilight"] .daytab{border-radius:20px;}
@@ -916,12 +918,14 @@
   body[data-theme="deepspace"]{
     --ink:#e6eaf4; --ink-soft:#97a3bf; --line:#26324d; --line-strong:#46557a;
     --surface:#1b2a4a; --surface-alt:#16223d; --now:#f2d27a;
+    --faint:#a9a498; --faint-icon:#c7c0b0; --now-text:#f2d27a;
   }
 
   /* Nebula: deep violet with lilac and pink, rounder buttons */
   body[data-theme="nebula"]{
     --ink:#efe8f7; --ink-soft:#a99cbf; --line:#2f2645; --line-strong:#54466f;
     --surface:#271d3c; --surface-alt:#211833; --now:#ee93b8;
+    --faint:#a9a498; --faint-icon:#c7c0b0; --now-text:#ee93b8;
   }
   body[data-theme="nebula"] button,
   body[data-theme="nebula"] .daytab{border-radius:20px;}
