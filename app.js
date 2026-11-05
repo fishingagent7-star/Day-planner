@@ -934,6 +934,8 @@
       var check = document.createElement('input');
       check.type = 'checkbox';
       check.className = 'check';
+      // names a screen reader reads out (the controls themselves only show symbols or numbers)
+      check.setAttribute('aria-label', 'Done: ' + (b.title || 'untitled block'));
       check.checked = !!b.done;
       check.addEventListener('change', function(e){
         b.done = e.target.checked;
@@ -950,6 +952,7 @@
       var timeInput = document.createElement('input');
       timeInput.type = 'time';
       timeInput.step = 300;
+      timeInput.setAttribute('aria-label', 'Start time');
       timeInput.value = b.time;
       // Browsers send "change" after each typed digit (12:0|3 before the 0 of 30), so save
       // straight away but only redraw (which closes the box) once the person leaves it.
@@ -969,6 +972,7 @@
       var durDown = document.createElement('button');
       durDown.type = 'button';
       durDown.className = 'dur-step';
+      durDown.setAttribute('aria-label', '5 minutes shorter');
       durDown.textContent = '\u2212';
       durDown.addEventListener('click', function(){
         b.duration = Math.max(5, b.duration - 5);
@@ -980,6 +984,7 @@
       durInput.type = 'number';
       durInput.min = 5;
       durInput.step = 5;
+      durInput.setAttribute('aria-label', 'Length in minutes');
       durInput.value = b.duration;
       durInput.addEventListener('change', function(e){
         var v = parseInt(e.target.value, 10);
@@ -991,6 +996,7 @@
       var durUp = document.createElement('button');
       durUp.type = 'button';
       durUp.className = 'dur-step';
+      durUp.setAttribute('aria-label', '5 minutes longer');
       durUp.textContent = '+';
       durUp.addEventListener('click', function(){
         b.duration = b.duration + 5;
@@ -1016,6 +1022,7 @@
       endTimeInput.type = 'time';
       endTimeInput.step = 300;
       endTimeInput.className = 'end-time-input';
+      endTimeInput.setAttribute('aria-label', 'End time');
       endTimeInput.value = minutesToTime(timeToMinutes(b.time) + b.duration);
       endTimeInput.addEventListener('change', function(e){
         if(!e.target.value) return;
@@ -2870,6 +2877,8 @@
       : focus === CONSTELLATIONS.length - 1 ? '<b>Your sky is complete!</b> All 88 constellations collected.'
       : '<b>' + con.name + ' complete!</b> It joins your sky tomorrow.';
     var welcome = p.earned === 0 && !consLoading ? '<span class="sky-evening">Your first star is a welcome gift, for showing up ✦</span>' : '';
+    // what a screen reader says for the sky panel (it's a button)
+    document.getElementById('nightSkyBlock').setAttribute('aria-label', 'Night sky: ' + line.replace(/<[^>]+>/g, ''));
     document.getElementById('nightSkyCaption').innerHTML = line +
       '<span class="sky-hint"> · Tap to open</span>' + (welcome || eveningNote()) +
       '<span class="sky-more"> · ' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
