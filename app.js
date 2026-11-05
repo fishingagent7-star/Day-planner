@@ -1689,7 +1689,7 @@
     original:  { bg:'#f6f4ee', accent:'#3a5a49', dark:false },
     daybreak:  { bg:'#f3f5fa', accent:'#2c4a7c', dark:false },
     twilight:  { bg:'#efeaf2', accent:'#6a4f96', dark:false },
-    deepspace: { bg:'#121a2e', accent:'#f2d27a', dark:true  },
+    deepspace: { bg:'#121a2e', accent:'#9bb8ea', dark:true  }, // moonlight blue: gold is kept for "done"
     nebula:    { bg:'#1a1428', accent:'#c99ae8', dark:true  }
   };
   // "Darken at sunset" pairs each light theme with a dark one (and back again for the toggle)
@@ -1816,6 +1816,8 @@
         if(!THEMES[settings.theme]) Object.assign(settings, THEMES.original, { theme: 'original' });
         // so is the old green-black Dark mode; it becomes Deep Space
         if(settings.theme === 'original' && settings.dark) Object.assign(settings, THEMES.deepspace, { theme: 'deepspace' });
+        // Deep Space's main colour was gold until 2026-11-06; it's moonlight blue now
+        if(settings.theme === 'deepspace' && settings.accent === '#f2d27a') settings.accent = THEMES.deepspace.accent;
       }
       applySettings();
       settingsLoaded = true; // really read (or really nothing saved yet), not a failed read

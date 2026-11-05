@@ -914,7 +914,7 @@
   body[data-theme="twilight"] button,
   body[data-theme="twilight"] .daytab{border-radius:20px;}
 
-  /* Deep Space: the logo's night blue and gold */
+  /* Deep Space: the logo's night blue, with moonlight-blue buttons (gold is kept for the stars) */
   body[data-theme="deepspace"]{
     --ink:#e6eaf4; --ink-soft:#97a3bf; --line:#26324d; --line-strong:#46557a;
     --surface:#1b2a4a; --surface-alt:#16223d; --now:#f0857b;
