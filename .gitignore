@@ -12,3 +12,7 @@ archive/
 # Private keys (never upload these)
 secrets/
 
+
+# The Understand Anything code map (made on this computer, not part of the app)
+.ua/
+.understand-anything/
