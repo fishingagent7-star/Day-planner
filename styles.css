@@ -965,6 +965,7 @@
   .night-sky:not(.open) .sky-more,
   .night-sky.open .sky-hint{display:none;}
   .sky-evening{display:block;font-style:italic;} /* the after-sunset line about today */
+  .sky-evening + .sky-more .sky-dot{display:none;} /* that line pushes this onto a new line, so no leading dot */
   .sky-burst{fill:none;stroke:#f6e7b0;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:sky-burst 1.6s ease-out .3s both;}
   @keyframes sky-burst{0%{opacity:.9;transform:scale(.4)} 100%{opacity:0;transform:scale(5)}}
   .night-sky-caption{margin:0;padding:6px 2px 0;font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;font-size:13px;line-height:1.5;color:var(--ink-soft);}

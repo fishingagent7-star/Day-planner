@@ -2924,7 +2924,7 @@
     document.getElementById('nightSkyCaption').innerHTML = line +
       '<span class="sky-hint"> · Tap to open</span>' +
       (reached ? '<span class="sky-evening">' + bonusGood + ' good days. ' + reached.note + ' ✦</span>' : welcome || eveningNote()) +
-      '<span class="sky-more"> · ' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
+      '<span class="sky-more"><span class="sky-dot"> · </span>' + done + ' of ' + CONSTELLATIONS.length + ' collected' +
       '<br>A star for every day you finish ' + goal + ' of your blocks.' +
       (nextBonus ? ' Next bonus: ' + nextBonus.name.replace(/^The /, 'the ') + ' at ' + nextBonus.at + ' good days (' + bonusGood + ' so far).' : '') +
       (consLoading ? ' Counting your days…' : '') + '</span>';
