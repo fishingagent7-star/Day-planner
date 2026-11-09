@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://lodestarplanner.netlify.app/sitemap.xml
+Sitemap: https://lodestarplanner.pages.dev/sitemap.xml

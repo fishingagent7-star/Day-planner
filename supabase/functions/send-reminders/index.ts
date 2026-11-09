@@ -28,7 +28,7 @@ const vapidKeys = await webpush.importVapidKeys({
   privateKey: { ...PUBLIC_JWK, d: Deno.env.get("VAPID_PRIVATE_KEY")! },
 });
 const pushServer = await webpush.ApplicationServer.new({
-  contactInformation: "https://lodestarplanner.netlify.app/",
+  contactInformation: "https://lodestarplanner.pages.dev/",
   vapidKeys,
 });
 

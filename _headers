@@ -1,4 +1,4 @@
-# Netlify safety settings for every page and file.
+# Safety settings (Cloudflare Pages reads this file) for every page and file.
 # Content-Security-Policy: browsers only run code and load things from the places listed.
 #   scripts: our own files, the Supabase library on jsDelivr, and the small forwarding
 #   script in index.html (its sha256 fingerprint; change it if that script changes).
@@ -7,7 +7,7 @@
 #   allowed because app.js colours things with element.style. Cloudflare Turnstile (sign-in spam
 #   guard) needs its script and its little frame from challenges.cloudflare.com.
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com 'sha256-YzgkbZVUUzu5ocRuPZ+Wgm/3PBrCjvAqiUcXK9kfepg='; connect-src 'self' https://mkhqwzkjgglppmwrdvsv.supabase.co wss://mkhqwzkjgglppmwrdvsv.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; worker-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  Content-Security-Policy: default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://challenges.cloudflare.com 'sha256-BWprEW9CpUHFYfxBSrOFQj4ujV2X4SJdSAZ/9aQFSko='; connect-src 'self' https://mkhqwzkjgglppmwrdvsv.supabase.co wss://mkhqwzkjgglppmwrdvsv.supabase.co https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; worker-src 'self'; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   Permissions-Policy: camera=(), microphone=(), geolocation=()
