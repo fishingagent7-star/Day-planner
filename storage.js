@@ -217,7 +217,7 @@ if(!window.storage){
       userId = id;
       try{ localStorage.setItem('lodestar:lastUser', id); }catch(e){}
       copy = loadLocal('copy'); lists = loadLocal('lists'); outbox = loadLocal('outbox');
-      box.hidden = resetting; // a password-reset link keeps the "new password" screen up
+      box.hidden = !resetting; // a password-reset link keeps the "new password" screen up
       signedIn();
       showNote();
       sync();
