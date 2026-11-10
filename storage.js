@@ -366,6 +366,7 @@ if(!window.storage){
     var reported = [];
     function reportError(message, source){
       message = String(message || 'Unknown error').slice(0, 500);
+      if(/^Script error\.?$/.test(message)) return; // from another site's code (or a browser extension): the browser hides the details, so it can't be fixed
       if(!client || !userId || !navigator.onLine || reported.length >= 5 || reported.indexOf(message) !== -1) return;
       reported.push(message);
       client.from('errors').insert({ message: message, source: String(source || '').slice(0, 300), device: navigator.userAgent.slice(0, 300) })
