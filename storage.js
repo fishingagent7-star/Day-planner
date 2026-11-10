@@ -360,7 +360,9 @@ if(!window.storage){
           return rawGet(key).then(function(row){ return mergeChange(key, entry, row ? row.value : null); }).then(function(v){
             return (v === null ? rawDelete(key) : rawSet(key, v)).then(function(){
               if(outbox[key] === entry) delete outbox[key];
-              else if(outbox[key]){ outbox[key].base = v; outbox[key].blind = false; } // a newer change made meanwhile stays queued, now based on what was just sent
+              // a newer change made meanwhile stays queued. It was built on this device's version (entry.value),
+              // not on the merged one just sent (v): based on v, another device's new blocks would look deleted here
+              else if(outbox[key]){ outbox[key].base = entry.value; outbox[key].blind = false; }
               if(v === null) delete copy[key]; else copy[key] = v;
               saveLocal();
             });
