@@ -269,6 +269,9 @@ if(!window.storage){
     // day can overtake each other, an older save that fails late (the internet dropped) can replace
     // a newer one waiting to sync, and a read can miss a save that is still on its way.
     var turns = {};
+    // What the app last saw of each key on this screen (read, or saved by it). It's the "before"
+    // for a save: if what's saved now differs, another device changed it meanwhile.
+    var seen = {};
     function inTurn(key, job){
       var p = (turns[key] || Promise.resolve()).then(job);
       turns[key] = p.catch(function(){});
@@ -288,9 +291,9 @@ if(!window.storage){
     // Each waiting change remembers what the device had before it (base), so syncing can apply
     // only what was changed here and keep changes made on other devices meanwhile.
     function queue(key, value){
-      var old = outbox[key];
+      var old = outbox[key], had = key in seen ? seen[key] : copy[key];
       outbox[key] = old ? { value: value, blind: old.blind, base: old.base }
-        : { value: value, blind: !(key in copy), base: key in copy ? copy[key] : null };
+        : { value: value, blind: had === undefined, base: had === undefined ? null : had };
       saveLocal();
       showNote();
       if(navigator.onLine) setTimeout(sync, 0); // e.g. a newer change to a key that was still waiting
@@ -352,6 +355,19 @@ if(!window.storage){
       return entry.blind ? saved : local;
     }
 
+    // Saving online. A day is sent whole, so first check what's saved now: if another device (or tab)
+    // changed it since this screen last saw it, combine the two (mergeDay) instead of replacing
+    // theirs. Gives back what was really saved. Other keys are simply saved.
+    function saveDayOrValue(key, value){
+      if(key.indexOf('plan:') !== 0) return rawSet(key, value).then(function(){ return value; });
+      var base = key in seen ? seen[key] : undefined; // undefined: never read here (e.g. Import), so keep what's saved and add ours
+      return rawGet(key).then(function(row){
+        var saved = row ? row.value : null;
+        var v = saved === base ? value : mergeChange(key, { value: value, blind: base === undefined, base: base === undefined ? null : base }, saved);
+        return rawSet(key, v).then(function(){ return v; });
+      });
+    }
+
     // Send the outbox, one change at a time. One that fails stays queued and is tried again
     // later, without holding up the others.
     function sync(){
@@ -410,13 +426,14 @@ if(!window.storage){
       // Offline: this device's copy, or an error if it never had one.
       get: function(key){
         return ready.then(function(){ return inTurn(key, function(){
-          if(key in outbox) return outbox[key].value === null ? null : { key: key, value: outbox[key].value }; // a change still waiting to send is the newest
+          if(key in outbox){ seen[key] = outbox[key].value; return outbox[key].value === null ? null : { key: key, value: outbox[key].value }; } // a change still waiting to send is the newest
           return server(function(){ return rawGet(key); }).then(function(row){
             if(row) copy[key] = row.value; else delete copy[key];
+            seen[key] = row ? row.value : null;
             saveLocal();
             return row ? { key: key, value: row.value } : null;
           }, function(err){
-            if(isOffline(err) && key in copy) return { key: key, value: copy[key] };
+            if(isOffline(err) && key in copy){ seen[key] = copy[key]; return { key: key, value: copy[key] }; }
             throw err;
           });
         }); });
@@ -425,14 +442,19 @@ if(!window.storage){
       // something "truthy" so the app knows the save worked. Offline it's queued.
       set: function(key, value){
         return ready.then(function(){ return inTurn(key, function(){
-          var send = navigator.onLine && !(key in outbox) ? rawSet(key, value) : Promise.reject(new Error('offline'));
+          var sent = value;
+          var send = navigator.onLine && !(key in outbox) ? saveDayOrValue(key, value).then(function(v){ sent = v; }) : Promise.reject(new Error('offline'));
           return send.then(function(){
-            copy[key] = value;
+            copy[key] = sent;
+            seen[key] = value; // the app's own version: the "before" for its next save
             saveLocal();
+            // another device's changes were combined in: tell the app, so it can show them
+            if(sent !== value) window.dispatchEvent(new CustomEvent('lodestar:merged', { detail: key }));
           }, function(err){
             if(!isOffline(err) && !(key in outbox)) throw err;
             queue(key, value);
             copy[key] = value;
+            seen[key] = value;
             saveLocal();
           }).then(function(){ return { key: key, value: value }; });
         }); });
@@ -443,6 +465,7 @@ if(!window.storage){
           var send = navigator.onLine && !(key in outbox) ? rawDelete(key) : Promise.reject(new Error('offline'));
           return send.then(function(){
             delete copy[key];
+            seen[key] = null;
             saveLocal();
           }, function(err){
             if(!isOffline(err) && !(key in outbox)) throw err;

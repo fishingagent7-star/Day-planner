@@ -694,6 +694,9 @@
     }).catch(function(){});
   }
   function cameBack(){ if(!document.hidden){ newDayCheck(); refreshDay(); } }
+  // A save here was combined with another device's changes (storage.js): show the combined day.
+  // A moment later, once this save has finished (refreshDay waits while one is in progress).
+  window.addEventListener('lodestar:merged', function(e){ if(e.detail === shownKey) setTimeout(refreshDay, 500); });
   document.addEventListener('visibilitychange', cameBack); // the phone app reopened, or this browser tab picked again
   window.addEventListener('focus', cameBack);              // clicked back into the browser window
   // Leaving the app: save now. A phone can close the app before the usual short wait (350ms) is up.
