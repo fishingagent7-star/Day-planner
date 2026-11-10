@@ -44,8 +44,15 @@ Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-fil
 - **Missing keys:** treat as empty (`safeGet`), but ONLY for reads that are never written back. A read that will be saved again (a day, `recurapplied:`, `consindex`) uses `getForWrite` / `window.storage.get`, so a failed read can't be saved over the real thing (found and fixed 2026-11-10).
 - **Safety settings reach the helper too:** `_headers` (content security policy) also applies to `sw.js`. Anything the helper fetches must be in `connect-src`, or the app breaks once the helper takes over. After changing `_headers`, change `HELPER_VERSION` in `sw.js` so installed helpers update.
 - **Redraws:** the list is briefly emptied while re-rendering; hold its height and scroll position or the page jumps to the top.
+- **Save under the day on screen, not the tab just tapped (2026-11-10):** while a newly tapped day loads, the old day's blocks are still showing. `saveDay` uses `shownKey` (set when a day is shown), and refuses to save before anything has loaded.
+- **The date changes while the app is open (2026-11-10):** a phone keeps the app open for days. `newDayCheck` (every 30 s, and on coming back to the app) rebuilds `DATES` and opens today.
+- **One job at a time per key (2026-11-10):** `storage.js` runs get/set/delete of the same key in order (`inTurn`), so saves can't overtake each other and an older save that fails late can't replace a newer one in the outbox.
+- **Sync, newer change queued meanwhile (2026-11-10):** its base is this device's version that was just sent (`entry.value`), not the merged result, or another device's new blocks look deleted.
+- **A backup must be whole (2026-11-10):** Export reads with `getForWrite` and stops on any failed read, because exporting switches on old-day tidying.
+- **Adding recurring blocks must be safe to repeat (2026-11-10):** `applyRecurringTo` skips a block already on the day (same time and title).
 
 ## Known gaps
+- Two devices: each save sends the whole day, so the last device to save wins (online there is no merge). Open question for the owner, 2026-11-10.
 - Checked 2026-11-02 (backup of 37 days): no copies from the old "empty day copies yesterday" bug (those would share block ids with the day before). Look-alike days come from recurring templates.
 
 ## Suggested first steps
