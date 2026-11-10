@@ -421,6 +421,7 @@
     function show(list, failed){
       if(mySeq !== loadSeq) return; // the user has already moved on to another day
       failedDay = failed ? dateKey(date) : null;
+      shownKey = dateKey(date);
       blocks = list;
       historyStack = [];
       redoStack = [];
@@ -446,16 +447,23 @@
   var hasUnsavedChanges = false;
   var pendingSaves = {}; // day key -> JSON taken at the moment of the edit
   var failedDay = null;  // the day on screen didn't load: its edits must not be saved over the real one
+  // The day whose blocks are on screen. NOT the tab just tapped: until that day has loaded, the
+  // old day's blocks are still showing, and an edit to them belongs to the old day.
+  var shownKey = null;
 
   function saveDay(){
-    if(dateKey(DATES[activeIndex]) === failedDay){
+    if(!shownKey){ // nothing has loaded yet: saving now would replace the real day with what's on screen
+      setStatus('Still loading your day. Try that again in a moment.');
+      return;
+    }
+    if(shownKey === failedDay){
       setStatus('This day didn’t load, so changes can’t be saved. Reload the page to try again.', 6000);
       return;
     }
     hasUnsavedChanges = true;
-    // snapshot now, under the day that's on screen now, so switching days
+    // snapshot now, under the day these blocks belong to, so switching days
     // before the timer fires can't send the wrong content to the wrong day
-    pendingSaves[dateKey(DATES[activeIndex])] = JSON.stringify(blocks);
+    pendingSaves[shownKey] = JSON.stringify(blocks);
     clearTimeout(saveTimer);
     saveTimer = setTimeout(flushSaves, 350);
   }
