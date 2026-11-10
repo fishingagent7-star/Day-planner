@@ -1316,9 +1316,11 @@
     templateStatusEl.textContent = text;
   }
 
+  // Gives back true if it saved, false (and says so) if it didn't.
   function saveTemplatesToStorage(){
-    return window.storage.set('templates', JSON.stringify(templates)).catch(function(){
+    return window.storage.set('templates', JSON.stringify(templates)).then(function(){ return true; }, function(){
       setTemplateStatus('Couldn’t save the template. Check your internet connection, then try again.');
+      return false;
     });
   }
 
@@ -1388,10 +1390,15 @@
       setTemplateStatus('Nothing to save on this day yet');
       return;
     }
+    var before = templates[name];
     templates[name] = blocks.map(function(b){
       return { time: b.time, title: b.title, notes: b.notes, tags: b.tags.slice(), duration: b.duration || 30 };
     });
-    saveTemplatesToStorage().then(function(){
+    saveTemplatesToStorage().then(function(ok){
+      if(!ok){ // not saved: put the list back as it was, and leave the message saying so
+        if(before) templates[name] = before; else delete templates[name];
+        return;
+      }
       renderTemplateSelect();
       templateSelect.value = name;
       templateNameInput.value = '';
@@ -1446,8 +1453,10 @@
     deleteArmed = false;
     deleteTemplateBtn.textContent = 'Delete template';
     deleteTemplateBtn.classList.remove('armed');
+    var removed = templates[name];
     delete templates[name];
-    saveTemplatesToStorage().then(function(){
+    saveTemplatesToStorage().then(function(ok){
+      if(!ok){ templates[name] = removed; return; } // not deleted: keep it in the list
       renderTemplateSelect();
       setTemplateStatus('Deleted "' + name + '"');
     });
