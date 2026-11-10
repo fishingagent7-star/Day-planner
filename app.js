@@ -2129,12 +2129,12 @@
         var k = dateKey(d);
         if(keys.indexOf(k) === -1) keys.push(k);
       });
+      // getForWrite, here and below: online, anything that can't be read stops the backup. A backup with
+      // a hole in it would still switch on old-day tidying, which then deletes the days it left out.
       function readSequentially(ks, idx, acc){
         if(idx >= ks.length) return Promise.resolve(acc);
-        return window.storage.get(ks[idx]).then(function(r){
+        return getForWrite(ks[idx]).then(function(r){
           acc.push({ key: ks[idx], value: r ? r.value : null });
-        }).catch(function(){
-          acc.push({ key: ks[idx], value: null });
         }).then(function(){
           return readSequentially(ks, idx + 1, acc);
         });
@@ -2144,11 +2144,11 @@
       return readSequentially(keys.concat(appliedKeys), 0, []);
     }).then(function(dayEntries){
       return Promise.all([
-        window.storage.get('categories').catch(function(){ return null; }),
-        window.storage.get('templates').catch(function(){ return null; }),
-        window.storage.get('settings').catch(function(){ return null; }),
-        window.storage.get('consindex').catch(function(){ return null; }),
-        window.storage.get('recurring').catch(function(){ return null; })
+        getForWrite('categories'),
+        getForWrite('templates'),
+        getForWrite('settings'),
+        getForWrite('consindex'),
+        getForWrite('recurring')
       ]).then(function(extras){
         var backup = {
           exportedAt: new Date().toISOString(),
