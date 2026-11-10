@@ -2019,7 +2019,11 @@
   // the helper also keeps the app's files fresh, so start it for everyone
   if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function(){});
   if(pushOk && Notification.permission === 'granted'){
-    currentSub().then(function(sub){ showReminders(!!sub); }).catch(function(){});
+    // "On" only if this account really has this device's address saved; without it nothing would arrive
+    currentSub().then(function(sub){
+      if(!sub) return showReminders(false);
+      return pushKey(sub).then(safeGet).then(function(row){ showReminders(!!(row && row.value)); });
+    }).catch(function(){});
   }
 
   remindersBtn.addEventListener('click', function(){
