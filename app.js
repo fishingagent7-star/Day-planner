@@ -1830,6 +1830,10 @@
   }
 
   function saveSettings(){
+    if(!settingsLoaded){ // the defaults are showing: saving would replace the real settings with them
+      setStatus('Your settings didn’t load, so this change won’t be saved. Reload the page to try again.', 6000);
+      return;
+    }
     window.storage.set('settings', JSON.stringify(settings)).catch(function(){});
   }
 
