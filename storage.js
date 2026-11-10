@@ -47,6 +47,10 @@ if(!window.storage){
           try{ last = localStorage.getItem('lodestar:lastUser'); }catch(e){}
           if(!navigator.onLine && last) useAccount(last);
           else { box.hidden = false; startCaptcha(); }
+        } else if(navigator.onLine && (event === 'SIGNED_OUT' || (session && session.user.id !== userId))){
+          // signed out (or signed in as someone else) in another tab: start again, rather than
+          // carry on as the old account with reads that come back empty. Not offline, where it could loop.
+          location.reload();
         }
       });
 
