@@ -2195,9 +2195,9 @@
         if(data.templates) extraWrites.push(window.storage.set('templates', data.templates).catch(function(){}));
         if(data.settings) extraWrites.push(window.storage.set('settings', data.settings).catch(function(){}));
         if(data.consindex){
-          extraWrites.push(safeGet('consindex').then(function(r){
-            var cur = {}, inc = {};
-            try{ cur = (r && r.value) ? (JSON.parse(r.value) || {}) : {}; }catch(e){ cur = {}; }
+          // not safeGet: if the saved summary can't be read, skip this rather than save over it
+          extraWrites.push(window.storage.get('consindex').then(function(r){
+            var cur = (r && r.value) ? (JSON.parse(r.value) || {}) : {}, inc = {};
             try{ inc = JSON.parse(data.consindex) || {}; }catch(e){ inc = {}; }
             Object.keys(inc).forEach(function(k){ if(!(k in cur)) cur[k] = inc[k]; });
             return window.storage.set('consindex', JSON.stringify(cur));
@@ -2511,11 +2511,10 @@
         if(!old.length) return;
         setCompactStatus('Tidying old days\u2026 0 of ' + totalOld);
 
-        return safeGet('consindex').then(function(r){
+        // not safeGet: a failed read must stop here, not look like "no summary yet" and get saved over
+        return window.storage.get('consindex').then(function(r){
           var index = {};
-          if(r && r.value){
-            try{ index = JSON.parse(r.value) || {}; }catch(e){ index = {}; }
-          }
+          if(r && r.value) index = JSON.parse(r.value) || {}; // unreadable: stop, change nothing
 
           function deleteSeq(keys, i){
             if(i >= keys.length) return Promise.resolve();
