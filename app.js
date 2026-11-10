@@ -153,6 +153,16 @@
   }
 
 
+  // Sample blocks for someone brand new, so the welcome tour has something to point at.
+  // Only shown until the tour is done (see loadDay), and only saved if they change one.
+  function defaultBlocks(){
+    return [
+      { id: uid(), time:"07:00", title:"Wake up", notes:"", tags:[], done:false, duration:30 },
+      { id: uid(), time:"08:30", title:"School starts", notes:"", tags:["School"], done:false, duration:390 },
+      { id: uid(), time:"16:00", title:"Study block", notes:"", tags:["Study"], done:false, duration:60 }
+    ];
+  }
+
   function tagColor(name){
     var hash = 0;
     for(var i=0;i<name.length;i++){
@@ -430,7 +440,11 @@
       if(res && res.value){
         try{ arr = JSON.parse(res.value); }catch(e){ arr = []; }
       } else {
-        arr = []; // nothing saved yet: a blank day (recurring templates are added below)
+        // nothing saved yet: a blank day (recurring templates are added below). The one exception is
+        // someone who hasn't done the welcome tour: their first today gets the sample blocks.
+        // shortcut: if settings load after the day (rare), a new person just gets a blank day and a shorter tour.
+        var firstLook = settingsLoaded && !settings.tourDone && date.toDateString() === new Date().toDateString();
+        arr = firstLook ? defaultBlocks() : [];
       }
       return applyRecurringTo(arr, date);
     }).then(function(){
