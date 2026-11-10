@@ -49,6 +49,8 @@ Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-fil
 - **One job at a time per key (2026-11-10):** `storage.js` runs get/set/delete of the same key in order (`inTurn`), so saves can't overtake each other and an older save that fails late can't replace a newer one in the outbox.
 - **Sync, newer change queued meanwhile (2026-11-10):** its base is this device's version that was just sent (`entry.value`), not the merged result, or another device's new blocks look deleted.
 - **A backup must be whole (2026-11-10):** Export reads with `getForWrite` and stops on any failed read, because exporting switches on old-day tidying.
+- **Other tabs share the sign-in (2026-11-10):** signing out, or signing in as someone else, in one tab reloads the others (`storage.js`, only when online).
+- **Pushing to GitHub does not update the reminder sender:** `supabase/functions/send-reminders` has to be deployed to Supabase separately.
 - **Adding recurring blocks must be safe to repeat (2026-11-10):** `applyRecurringTo` skips a block already on the day (same time and title).
 
 ## Known gaps
