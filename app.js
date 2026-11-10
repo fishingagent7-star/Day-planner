@@ -157,9 +157,10 @@
   // Only shown until the tour is done (see loadDay), and only saved if they change one.
   function defaultBlocks(){
     return [
-      { id: uid(), time:"07:00", title:"Wake up", notes:"", tags:[], done:false, duration:30 },
-      { id: uid(), time:"08:30", title:"School starts", notes:"", tags:["School"], done:false, duration:390 },
-      { id: uid(), time:"16:00", title:"Study block", notes:"", tags:["Study"], done:false, duration:60 }
+      // three gentle examples that suit anyone (the free guide's rule 1: "pick 3 things")
+      { id: uid(), time:"08:00", title:"Slow start: water, stretch", notes:"", tags:[], done:false, duration:20 },
+      { id: uid(), time:"10:00", title:"One thing that matters today", notes:"", tags:[], done:false, duration:60 },
+      { id: uid(), time:"17:30", title:"Move a little", notes:"", tags:[], done:false, duration:30 }
     ];
   }
 
