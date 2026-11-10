@@ -2088,7 +2088,8 @@
 
     return {
       title: title,
-      time: time || (function(){ var d = new Date(); return String(d.getHours()).padStart(2,'0') + ':' + String(Math.round(d.getMinutes()/5)*5 % 60).padStart(2,'0'); })(),
+      // now, to the nearest 5 minutes (10:58 is 11:00, not 10:00); never past 23:55 into tomorrow
+      time: time || (function(){ var d = new Date(); return minutesToTime(Math.min(1435, d.getHours() * 60 + d.getMinutes())); })(),
       duration: duration || 30
     };
   }
