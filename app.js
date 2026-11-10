@@ -152,14 +152,6 @@
     blocks.sort(function(a,b){ return timeToMinutes(a.time) - timeToMinutes(b.time); });
   }
 
-  function defaultBlocks(){
-    return [
-      { id: uid(), time:"07:00", title:"Wake up", notes:"", tags:[], done:false, duration:30 },
-      { id: uid(), time:"08:30", title:"School starts", notes:"", tags:["School"], done:false, duration:390 },
-      { id: uid(), time:"16:00", title:"Study block", notes:"", tags:["Study"], done:false, duration:60 }
-    ];
-  }
-
 
   function tagColor(name){
     var hash = 0;
@@ -438,7 +430,7 @@
       if(res && res.value){
         try{ arr = JSON.parse(res.value); }catch(e){ arr = []; }
       } else {
-        arr = (date.toDateString() === new Date().toDateString()) ? defaultBlocks() : [];
+        arr = []; // nothing saved yet: a blank day (recurring templates are added below)
       }
       return applyRecurringTo(arr, date);
     }).then(function(){
