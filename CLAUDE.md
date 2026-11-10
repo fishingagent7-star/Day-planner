@@ -56,7 +56,6 @@ Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-fil
 - **Two devices editing one day (2026-11-10):** online, saving a day first reads what's saved now (`saveDayOrValue` in storage.js). If it differs from what this screen last saw (`seen`), the two are combined with `mergeDay`, never replaced; the app then refreshes the day (`lodestar:merged` → `refreshDay`). `seen` is the app's own version, not the combined one, for the same reason as the sync lesson above. Only `plan:` keys are combined; other keys: last save wins.
 
 ## Known gaps
-- Two devices: each save sends the whole day, so the last device to save wins (online there is no merge). Since 2026-11-10 the day is re-read on coming back to the app (`refreshDay`), which covers the usual case. Still open: both devices open and in use at the same moment, or an edit made in the first instant after coming back.
 - Checked 2026-11-02 (backup of 37 days): no copies from the old "empty day copies yesterday" bug (those would share block ids with the day before). Look-alike days come from recurring templates.
 
 ## Suggested first steps
