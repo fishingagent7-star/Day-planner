@@ -30,6 +30,16 @@
     return window.storage.get(key).catch(function(){ return null; });
   }
 
+  // Read something that will be written back (a day, or which recurring rules it got). Online, a
+  // failed read must NOT look like "nothing saved", or the next save replaces the real thing.
+  // Offline it may: a change to something this device never had is merged in when it syncs.
+  function getForWrite(key){
+    return window.storage.get(key).catch(function(err){
+      if(!navigator.onLine) return null;
+      throw err;
+    });
+  }
+
   // Build a "YYYY-MM-DD" string from a date's LOCAL calendar day, never UTC.
   // toISOString() converts to UTC first, which silently shifts the date by
   // a day for any timezone that isn't UTC+0 — that was the source of the
@@ -105,7 +115,7 @@
     var matching = recurringRules.filter(function(r){ return r.weekdays.indexOf(weekday) !== -1; });
     if(matching.length === 0) return Promise.resolve();
 
-    return safeGet(recurAppliedKey(date)).then(function(res){
+    return getForWrite(recurAppliedKey(date)).then(function(res){ // unreadable: skip, rather than add them twice
       var applied = [];
       if(res && res.value){
         try{ applied = JSON.parse(res.value); }catch(e){ applied = []; }
@@ -408,8 +418,9 @@
     var arr = [];
     flushSaves(); // write any pending edit to the day we're leaving, right now
 
-    function show(list){
+    function show(list, failed){
       if(mySeq !== loadSeq) return; // the user has already moved on to another day
+      failedDay = failed ? dateKey(date) : null;
       blocks = list;
       historyStack = [];
       redoStack = [];
@@ -418,7 +429,7 @@
       splashReady('day');
     }
 
-    safeGet(dateKey(date)).then(function(res){
+    getForWrite(dateKey(date)).then(function(res){
       if(res && res.value){
         try{ arr = JSON.parse(res.value); }catch(e){ arr = []; }
       } else {
@@ -428,14 +439,19 @@
     }).then(function(){
       show(arr);
     }).catch(function(){
-      show([]);
+      show([], true); // shown empty, but saving is blocked (failedDay) so the real day can't be replaced
     });
   }
 
   var hasUnsavedChanges = false;
   var pendingSaves = {}; // day key -> JSON taken at the moment of the edit
+  var failedDay = null;  // the day on screen didn't load: its edits must not be saved over the real one
 
   function saveDay(){
+    if(dateKey(DATES[activeIndex]) === failedDay){
+      setStatus('This day didn’t load, so changes can’t be saved. Reload the page to try again.', 6000);
+      return;
+    }
     hasUnsavedChanges = true;
     // snapshot now, under the day that's on screen now, so switching days
     // before the timer fires can't send the wrong content to the wrong day
@@ -706,7 +722,7 @@
 
   function copyBlockToDate(block, isoDateStr){
     var targetKey = 'plan:' + isoDateStr;
-    flushSaves().then(function(){ return safeGet(targetKey); }).then(function(res){
+    flushSaves().then(function(){ return getForWrite(targetKey); }).then(function(res){
       var targetBlocks = [];
       if(res && res.value){
         try{ targetBlocks = JSON.parse(res.value); }catch(e){ targetBlocks = []; }
@@ -859,7 +875,9 @@
     if(blocks.length === 0){
       var empty = document.createElement('div');
       empty.className = 'empty';
-      empty.textContent = 'A fresh day. Tap + Add block to plan your first thing.';
+      empty.textContent = dateKey(DATES[activeIndex]) === failedDay
+        ? 'This day didn’t load. Check your internet, then reload the page.'
+        : 'A fresh day. Tap + Add block to plan your first thing.';
       track.appendChild(empty);
       restoreScroll();
       return;
