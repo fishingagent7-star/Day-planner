@@ -672,7 +672,21 @@
     loadDay();
   }
   setInterval(newDayCheck, 30000);
-  document.addEventListener('visibilitychange', function(){ if(!document.hidden) newDayCheck(); }); // coming back to the app
+
+  // Coming back to the app: another device may have changed this day meanwhile. Each save sends the
+  // whole day, so show what's saved now, or the next tick here saves an old copy of the day over it.
+  // Left alone when nothing changed (keeps undo) or while an edit here is still being saved.
+  function refreshDay(){
+    if(!shownKey || hasUnsavedChanges || shownKey !== dateKey(DATES[activeIndex])) return;
+    var seq = loadSeq;
+    window.storage.get(shownKey).then(function(res){
+      if(seq !== loadSeq || hasUnsavedChanges || !res || !res.value || res.value === JSON.stringify(blocks)) return;
+      loadDay();
+    }).catch(function(){});
+  }
+  function cameBack(){ if(!document.hidden){ newDayCheck(); refreshDay(); } }
+  document.addEventListener('visibilitychange', cameBack); // the phone app reopened, or this browser tab picked again
+  window.addEventListener('focus', cameBack);              // clicked back into the browser window
 
   function makeInsertGap(index){
     var gap = document.createElement('div');

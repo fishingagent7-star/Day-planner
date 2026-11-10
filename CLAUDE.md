@@ -52,7 +52,7 @@ Offline (2026-11-03): `sw.js` keeps copies of the app files (cache `lodestar-fil
 - **Adding recurring blocks must be safe to repeat (2026-11-10):** `applyRecurringTo` skips a block already on the day (same time and title).
 
 ## Known gaps
-- Two devices: each save sends the whole day, so the last device to save wins (online there is no merge). Open question for the owner, 2026-11-10.
+- Two devices: each save sends the whole day, so the last device to save wins (online there is no merge). Since 2026-11-10 the day is re-read on coming back to the app (`refreshDay`), which covers the usual case. Still open: both devices open and in use at the same moment, or an edit made in the first instant after coming back.
 - Checked 2026-11-02 (backup of 37 days): no copies from the old "empty day copies yesterday" bug (those would share block ids with the day before). Look-alike days come from recurring templates.
 
 ## Suggested first steps
