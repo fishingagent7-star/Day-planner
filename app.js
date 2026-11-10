@@ -335,10 +335,11 @@
   ];
   var tourBox = null, tourSteps = [], tourAt = 0, settingsLoaded = false;
 
-  // Only once someone is signed in, their settings have loaded, and the logo screen has gone:
-  // never over the sign-in screen, and never from settings that failed to load.
+  // Only once someone is signed in, their settings have loaded, the logo screen has gone and the
+  // day is on screen (shownKey): never over the sign-in screen, never from settings that failed
+  // to load, and not before there are blocks for the "Tick it off" step to point at.
   function maybeTour(){
-    if(settingsLoaded && !settings.tourDone && !document.getElementById('splash') && document.getElementById('signIn').hidden) startTour();
+    if(settingsLoaded && shownKey && !settings.tourDone && !document.getElementById('splash') && document.getElementById('signIn').hidden) startTour();
   }
 
   function startTour(){
@@ -430,6 +431,7 @@
       lastSnapshot = null;
       renderDay();
       splashReady('day');
+      maybeTour();
     }
 
     getForWrite(dateKey(date)).then(function(res){
