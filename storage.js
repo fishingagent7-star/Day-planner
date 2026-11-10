@@ -261,6 +261,15 @@ if(!window.storage){
     // Ask Supabase only when there's internet. Offline, its sign-in check retries for ~20s before
     // failing, which made every read (e.g. changing days) that slow.
     function server(ask){ return navigator.onLine ? ask() : Promise.reject(new Error('offline')); }
+    // One job at a time per key, in the order they were asked for. Otherwise two saves of the same
+    // day can overtake each other, an older save that fails late (the internet dropped) can replace
+    // a newer one waiting to sync, and a read can miss a save that is still on its way.
+    var turns = {};
+    function inTurn(key, job){
+      var p = (turns[key] || Promise.resolve()).then(job);
+      turns[key] = p.catch(function(){});
+      return p;
+    }
 
     // The small note at the top: offline, or still sending changes.
     function showNote(){
@@ -394,7 +403,7 @@ if(!window.storage){
       // Read one saved value. Gives back null if nothing is saved there.
       // Offline: this device's copy, or an error if it never had one.
       get: function(key){
-        return ready.then(function(){
+        return ready.then(function(){ return inTurn(key, function(){
           if(key in outbox) return outbox[key].value === null ? null : { key: key, value: outbox[key].value }; // a change still waiting to send is the newest
           return server(function(){ return rawGet(key); }).then(function(row){
             if(row) copy[key] = row.value; else delete copy[key];
@@ -404,12 +413,12 @@ if(!window.storage){
             if(isOffline(err) && key in copy) return { key: key, value: copy[key] };
             throw err;
           });
-        });
+        }); });
       },
       // Save one value (always text), replacing any old one. Gives back
       // something "truthy" so the app knows the save worked. Offline it's queued.
       set: function(key, value){
-        return ready.then(function(){
+        return ready.then(function(){ return inTurn(key, function(){
           var send = navigator.onLine && !(key in outbox) ? rawSet(key, value) : Promise.reject(new Error('offline'));
           return send.then(function(){
             copy[key] = value;
@@ -420,11 +429,11 @@ if(!window.storage){
             copy[key] = value;
             saveLocal();
           }).then(function(){ return { key: key, value: value }; });
-        });
+        }); });
       },
       // Remove one saved value. Offline it's queued.
       delete: function(key){
-        return ready.then(function(){
+        return ready.then(function(){ return inTurn(key, function(){
           var send = navigator.onLine && !(key in outbox) ? rawDelete(key) : Promise.reject(new Error('offline'));
           return send.then(function(){
             delete copy[key];
@@ -435,7 +444,7 @@ if(!window.storage){
             delete copy[key];
             saveLocal();
           }).then(function(){ return true; });
-        });
+        }); });
       },
       // Read every saved value whose key starts with `prefix`, in ONE request (instead of one
       // per key). Gives back { key: value }. Offline: this device's copies.
