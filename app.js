@@ -657,6 +657,21 @@
 
   setInterval(updateNowLine, 30000);
 
+  // A planner left open overnight (a phone keeps it open for days) must notice the new day.
+  // Otherwise it goes on showing yesterday as "today", and ticks land on the wrong date.
+  var builtOn = localDateStr(new Date());
+  function newDayCheck(){
+    var today = localDateStr(new Date());
+    if(today === builtOn) return;
+    builtOn = today;
+    DATES = weekDates();
+    activeIndex = (new Date().getDay() + 6) % 7; // the tabs start on Monday
+    renderTabs();
+    loadDay();
+  }
+  setInterval(newDayCheck, 30000);
+  document.addEventListener('visibilitychange', function(){ if(!document.hidden) newDayCheck(); }); // coming back to the app
+
   function makeInsertGap(index){
     var gap = document.createElement('div');
     gap.className = 'insert-gap';
