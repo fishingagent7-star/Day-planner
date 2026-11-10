@@ -295,6 +295,10 @@
     background:var(--surface);
     color:var(--ink);
   }
+  /* iPhone zooms in on any box with text under 16px when it's tapped, pushing the Add button off-screen */
+  @media (pointer: coarse){
+    .toolbar input[type="text"], .toolbar select, .toolbar input[type="number"], select{font-size:16px;}
+  }
   .toolbar input[type="text"]{width:140px;}
   button.toggle-active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);}
   .weekday-picker{
