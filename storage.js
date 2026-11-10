@@ -159,12 +159,20 @@ if(!window.storage){
           });
       });
 
+      // This device stops listening for reminders (best effort). The sender then finds the address
+      // gone on its next try and deletes it, so the next person to sign in here doesn't get them.
+      function stopPush(){
+        return navigator.serviceWorker ? navigator.serviceWorker.getRegistration().then(function(reg){
+          return reg && reg.pushManager.getSubscription().then(function(sub){ return sub && sub.unsubscribe(); });
+        }).catch(function(){}) : Promise.resolve();
+      }
+
       document.getElementById('signOutBtn').addEventListener('click', function(){
         // send any waiting offline changes first; signing out clears this device's copy
         sync().then(function(){
           if(Object.keys(outbox).length && !confirm('Some changes haven’t synced yet, because you’re offline. Sign out anyway and lose them?')) return;
           clearLocal();
-          return client.auth.signOut().then(function(){ location.reload(); });
+          return stopPush().then(function(){ return client.auth.signOut(); }).then(function(){ location.reload(); });
         });
       });
 
@@ -183,12 +191,9 @@ if(!window.storage){
         deleteMsg.textContent = 'Deleting…';
         client.rpc('delete_my_account').then(function(res){
           if(res.error){ deleteMsg.textContent = 'That didn’t work: ' + res.error.message; return; }
-          // best effort: stop this device's reminders too, then leave
-          var stopPush = navigator.serviceWorker ? navigator.serviceWorker.getRegistration().then(function(reg){
-            return reg && reg.pushManager.getSubscription().then(function(sub){ return sub && sub.unsubscribe(); });
-          }).catch(function(){}) : Promise.resolve();
+          // stop this device's reminders too, then leave
           clearLocal();
-          return stopPush.then(function(){ return client.auth.signOut(); }).catch(function(){}).then(function(){ location.reload(); });
+          return stopPush().then(function(){ return client.auth.signOut(); }).catch(function(){}).then(function(){ location.reload(); });
         });
       });
     }
