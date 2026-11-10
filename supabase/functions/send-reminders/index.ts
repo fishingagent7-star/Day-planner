@@ -88,42 +88,48 @@ Deno.serve(async (req) => {
 
   let sent = 0;
   for (const [userId, devices] of people) {
-    const now = localNow(devices[0].tz || "Australia/Sydney");
-    const sentKey = "remindsent:" + now.day;
-    const already: string[] = await readJson(userId, sentKey, []);
-    const blocks = (await readJson(userId, "plan:" + now.day, [])).concat(pendingRepeats(now.day,
-      await readJson(userId, "recurring", []), await readJson(userId, "recurapplied:" + now.day, []), await readJson(userId, "templates", {})));
-    const minutes = (await readJson(userId, "settings", {})).remindMinutes ?? devices[0].minutes ?? 5;
-    const due = dueBlocks(blocks, already, now.minute, minutes);
-    if (!due.length) continue;
+    // One person's odd data (an unknown time zone, a saved value in the wrong shape) must not
+    // stop the reminders for everyone after them: note it and carry on with the next person.
+    try {
+      const now = localNow(devices[0].tz || "Australia/Sydney");
+      const sentKey = "remindsent:" + now.day;
+      const already: string[] = await readJson(userId, sentKey, []);
+      const blocks = (await readJson(userId, "plan:" + now.day, [])).concat(pendingRepeats(now.day,
+        await readJson(userId, "recurring", []), await readJson(userId, "recurapplied:" + now.day, []), await readJson(userId, "templates", {})));
+      const minutes = (await readJson(userId, "settings", {})).remindMinutes ?? devices[0].minutes ?? 5;
+      const due = dueBlocks(blocks, already, now.minute, minutes);
+      if (!due.length) continue;
 
-    // Note them as sent first, so two runs close together can't both send.
-    await db.from(TABLE).upsert({
-      user_id: userId, key: sentKey,
-      value: JSON.stringify(already.concat(due.map((b) => b.id))),
-      updated_at: new Date().toISOString(),
-    });
-    await db.from(TABLE).delete().eq("user_id", userId).like("key", "remindsent:%").neq("key", sentKey);
-
-    for (const b of due) {
-      const message = JSON.stringify({
-        title: b.title || "Your next block",
-        body: b.left > 0 ? `Starts in ${b.left} min` : "Starting now",
-        tag: b.id,
+      // Note them as sent first, so two runs close together can't both send.
+      await db.from(TABLE).upsert({
+        user_id: userId, key: sentKey,
+        value: JSON.stringify(already.concat(due.map((b) => b.id))),
+        updated_at: new Date().toISOString(),
       });
-      for (const device of devices) {
-        try {
-          await pushServer.subscribe(device.sub).pushTextMessage(message, { ttl: 300 } as webpush.PushMessageOptions);
-          sent++;
-        } catch (e) {
-          // The phone turned reminders off or was reset: forget that address.
-          if (e instanceof webpush.PushMessageError && e.isGone()) {
-            await db.from(TABLE).delete().eq("user_id", userId).eq("key", device.key);
-          } else {
-            console.error("push failed", e);
+      await db.from(TABLE).delete().eq("user_id", userId).like("key", "remindsent:%").neq("key", sentKey);
+
+      for (const b of due) {
+        const message = JSON.stringify({
+          title: b.title || "Your next block",
+          body: b.left > 0 ? `Starts in ${b.left} min` : "Starting now",
+          tag: b.id,
+        });
+        for (const device of devices) {
+          try {
+            await pushServer.subscribe(device.sub).pushTextMessage(message, { ttl: 300 } as webpush.PushMessageOptions);
+            sent++;
+          } catch (e) {
+            // The phone turned reminders off or was reset: forget that address.
+            if (e instanceof webpush.PushMessageError && e.isGone()) {
+              await db.from(TABLE).delete().eq("user_id", userId).eq("key", device.key);
+            } else {
+              console.error("push failed", e);
+            }
           }
         }
       }
+    } catch (e) {
+      console.error("reminders skipped for one person", e);
     }
   }
   return new Response(JSON.stringify({ sent }), { headers: { "Content-Type": "application/json" } });
