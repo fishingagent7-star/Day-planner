@@ -315,7 +315,11 @@ if(!window.storage){
       if(a === undefined || b === undefined) return entry.blind ? saved : local;
       if(Array.isArray(a) && Array.isArray(b)){
         if(key.indexOf('plan:') === 0) return JSON.stringify(mergeDay(a, b, Array.isArray(base) ? base : null));
-        // other lists (applied rules, categories…): keep everything, no doubles
+        // other lists (applied rules, categories…): what's saved now, minus what was removed here,
+        // plus what was added here, no doubles (a changed item counts as removed + added)
+        var had = Array.isArray(base) ? base : [];
+        var removed = had.filter(function(v){ return !b.some(function(x){ return same(x, v); }); });
+        a = a.filter(function(v){ return !removed.some(function(x){ return same(x, v); }); });
         b.forEach(function(v){ if(!a.some(function(x){ return same(x, v); })) a.push(v); });
         return JSON.stringify(a);
       }
@@ -330,7 +334,8 @@ if(!window.storage){
       return entry.blind ? saved : local;
     }
 
-    // Send the outbox, one change at a time. Stops at the first failure and tries again later.
+    // Send the outbox, one change at a time. One that fails stays queued and is tried again
+    // later, without holding up the others.
     function sync(){
       if(syncing) return syncing;
       if(!userId || !navigator.onLine || !Object.keys(outbox).length){ showNote(); return Promise.resolve(); }
@@ -345,9 +350,9 @@ if(!window.storage){
               if(v === null) delete copy[key]; else copy[key] = v;
               saveLocal();
             });
-          });
+          }).catch(function(){}); // this one waits for the next try; carry on with the rest
         });
-      }, Promise.resolve()).catch(function(){}).then(function(){ syncing = null; showNote(); });
+      }, Promise.resolve()).then(function(){ syncing = null; showNote(); });
       return syncing;
     }
     window.addEventListener('online', function(){ sync(); });
