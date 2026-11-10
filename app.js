@@ -127,6 +127,8 @@
         var tpl = templates[r.templateName];
         if(!tpl) return;
         tpl.forEach(function(t){
+          // already there (an earlier try whose "applied" note didn't save): don't add it twice
+          if(arr.some(function(b){ return b.time === t.time && b.title === t.title; })) return;
           arr.push({
             id: uid(),
             time: t.time,
