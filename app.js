@@ -689,6 +689,8 @@
   function cameBack(){ if(!document.hidden){ newDayCheck(); refreshDay(); } }
   document.addEventListener('visibilitychange', cameBack); // the phone app reopened, or this browser tab picked again
   window.addEventListener('focus', cameBack);              // clicked back into the browser window
+  // Leaving the app: save now. A phone can close the app before the usual short wait (350ms) is up.
+  document.addEventListener('visibilitychange', function(){ if(document.hidden) flushSaves(); });
 
   function makeInsertGap(index){
     var gap = document.createElement('div');
