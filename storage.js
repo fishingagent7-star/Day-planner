@@ -19,7 +19,11 @@ if(!window.storage){
     var passwordInput = document.getElementById('signInPassword');
     var msg = document.getElementById('signInMsg');
     function say(text){ msg.textContent = text; }
-    function problem(err){ return isOffline(err) ? 'You’re offline. Connect to the internet, then try again.' : err.message; }
+    function problem(err){
+      if(isOffline(err)) return 'You’re offline. Connect to the internet, then try again.';
+      if(/captcha/i.test(err.message)) return 'The robot check didn’t go through. Wait a moment, then try again.';
+      return err.message;
+    }
 
     // Every drawer call waits here until someone is signed in.
     var userId = null;
@@ -42,7 +46,7 @@ if(!window.storage){
           var last = null;
           try{ last = localStorage.getItem('lodestar:lastUser'); }catch(e){}
           if(!navigator.onLine && last) useAccount(last);
-          else box.hidden = false;
+          else { box.hidden = false; startCaptcha(); }
         }
       });
 
@@ -66,13 +70,33 @@ if(!window.storage){
       document.getElementById('signInSwitch').addEventListener('click', function(){ setMode(!creating); });
 
       // Spam guard: Cloudflare Turnstile gives a one-use pass proving a person is here, which
-      // Supabase checks. false = still checking. If Turnstile didn't load, try without; Supabase decides.
+      // Supabase checks. It only runs while the sign-in screen is showing (not for someone
+      // already signed in, and not on the "choose a new password" screen, which doesn't need it).
+      // captcha() gives the pass, or false (and says why) when there isn't one yet.
+      var captchaBox = document.getElementById('captchaBox'), captchaId = null, captchaWanted = false;
+      function startCaptcha(){
+        captchaWanted = true;
+        if(captchaId !== null || !window.turnstile) return; // already running, or lodestarCaptchaReady starts it once loaded
+        captchaId = turnstile.render(captchaBox, {
+          sitekey: captchaBox.dataset.sitekey,
+          appearance: 'interaction-only',
+          'error-callback': function(){ say('The robot check had a problem. Wait a moment, or reload the page.'); return true; }
+        });
+      }
+      function stopCaptcha(){
+        captchaWanted = false;
+        if(captchaId === null) return;
+        try{ turnstile.remove(captchaId); }catch(e){}
+        captchaId = null;
+      }
+      window.lodestarCaptchaReady = function(){ if(captchaWanted) startCaptcha(); }; // Turnstile calls this once loaded
       function captcha(){
-        var token;
-        try{ token = turnstile.getResponse(); }catch(e){ return undefined; } // not loaded, or no widget
-
-        if(!token){ say('One moment, checking you’re not a robot… then try again.'); return false; }
-        turnstile.reset(); // each pass works once, so fetch a fresh one for next time
+        var token = captchaId !== null && turnstile.getResponse(captchaId);
+        if(!token){
+          say(captchaId === null ? 'The robot check is still loading. If this stays, reload the page.' : 'One moment, checking you’re not a robot… then try again.');
+          return false;
+        }
+        turnstile.reset(captchaId); // each pass works once, so fetch a fresh one for next time
         return token;
       }
 
@@ -101,6 +125,7 @@ if(!window.storage){
         passwordInput.minLength = 8;
         passwordInput.value = '';
         say('');
+        stopCaptcha();
         box.hidden = false;
       });
 
@@ -129,7 +154,8 @@ if(!window.storage){
         client.auth.signUp({ email: email, password: password, options: { emailRedirectTo: location.origin + location.pathname, captchaToken: token } })
           .then(function(res){
             if(res.error) say(problem(res.error));
-            else if(!res.data.session){ setMode(false); say('Almost done: check your email and tap the confirmation link, then sign in here.'); }
+            // no session: a confirmation email is on its way, or (Supabase won't say which, for privacy) the email already has an account
+            else if(!res.data.session){ setMode(false); say('Check your email for a confirmation link. Nothing there? You may already have an account: sign in here, or tap Forgot password.'); }
           });
       });
 
@@ -218,6 +244,7 @@ if(!window.storage){
       try{ localStorage.setItem('lodestar:lastUser', id); }catch(e){}
       copy = loadLocal('copy'); lists = loadLocal('lists'); outbox = loadLocal('outbox');
       box.hidden = !resetting; // a password-reset link keeps the "new password" screen up
+      stopCaptcha();
       signedIn();
       showNote();
       sync();

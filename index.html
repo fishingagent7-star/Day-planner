@@ -252,7 +252,7 @@
     <label>Email <input type="email" id="signInEmail" autocomplete="email" required></label>
     <label>Password <input type="password" id="signInPassword" autocomplete="current-password" required></label>
     <label class="age-check" id="ageLine" hidden><input type="checkbox" id="ageCheck"> I'm 13 or older</label>
-    <div class="cf-turnstile" data-sitekey="0x4AAAAAAFxtie3rf7LCjRg9" data-appearance="interaction-only"></div>
+    <div id="captchaBox" data-sitekey="0x4AAAAAAFxtie3rf7LCjRg9"></div>
     <button type="submit" class="primary" id="signInBtn">Sign in</button>
     <p class="sign-in-note" id="signInMsg" role="status"></p>
     <p class="sign-in-note"><span id="signInSwitchText">New here?</span> <button type="button" class="link-btn" id="signInSwitch">Create an account</button></p>
@@ -262,9 +262,10 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.3/dist/umd/supabase.min.js" integrity="sha384-dl/4LkSyQ4uEucc48NM6VDZLAjLLq9yMzZ5JLXumBq7Ld33XBof73hseOqPhO89+" crossorigin="anonymous"></script>
-<!-- Cloudflare Turnstile: the spam guard on the sign-in screen (usually invisible) -->
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="storage.js"></script>
+<!-- Cloudflare Turnstile: the spam guard on the sign-in screen (usually invisible). After storage.js,
+     which starts it only while the sign-in screen is showing (lodestarCaptchaReady). -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=lodestarCaptchaReady" async defer></script>
 
 <script src="app.js"></script>
 </body>
